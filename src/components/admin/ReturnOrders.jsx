@@ -98,7 +98,7 @@ const ReturnOrders = () => {
                           <span className="text-xs text-gray-500">
                             x{item.quantity}
                           </span>
-                          <span className="text-xs text-yellow-700">
+                          <span className="text-xs" style={{ color: '#702834' }}>
                             {item.reason}
                           </span>
                         </li>

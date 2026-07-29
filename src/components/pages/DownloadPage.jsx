@@ -42,7 +42,7 @@ export default function DownloadPage() {
   return (
     <div className="bg-white min-h-screen mt-16">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-red-500 to-red-600 text-white py-20 px-6 text-center">
+      <div className="text-white py-20 px-6 text-center" style={{ background: 'linear-gradient(135deg, #F44400, #d63a00)' }}>
         <motion.h1
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,7 +132,8 @@ export default function DownloadPage() {
               <a
                 href="#"
                 onClick={(e) => e.preventDefault()}
-                className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-700 transition transform hover:scale-105 shadow-lg"
+                className="flex items-center gap-2 text-white px-6 py-3 rounded-full transition transform hover:scale-105 shadow-lg"
+                style={{ backgroundColor: '#702834' }}
                 aria-label="Get it on Google Play"
               >
                 <FaGooglePlay className="text-2xl" />

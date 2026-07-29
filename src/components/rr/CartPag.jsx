@@ -36,7 +36,8 @@ const CartPag = () => {
             Looks like you haven't added anything yet.
           </p>
           <button
-            className="bg-red-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-red-600 transition"
+            className="text-white px-6 py-2 rounded-full font-semibold transition"
+            style={{ backgroundColor: '#702834' }}
             onClick={() => navigate("/")}
           >
             Start Shopping
@@ -106,13 +107,13 @@ const CartPag = () => {
                   </button>
                 </div>
                 <button
-                  className="mt-2 text-red-500 text-sm hover:underline"
+                  className="mt-2 text-[#702834] text-sm hover:underline"
                   onClick={() => removeFromCart(item._id)}
                 >
                   Remove
                 </button>
               </div>
-              <div className="text-xl font-bold text-red-600 ml-6 min-w-[80px] text-right">
+              <div className="text-xl font-bold text-[#702834] ml-6 min-w-[80px] text-right">
                 ₹
                 {(parseInt(
                   (item.price + "").replace("₹", "").replace(",", "")

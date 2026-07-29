@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { FaUserCircle, FaSignOutAlt } from "react-icons/fa";
@@ -6,6 +7,10 @@ import { useAdmin } from "../context/AdminContext";
 const AdminLayout = () => {
   const { logout } = useAdmin();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Sangam Wholesale - Admin";
+  }, []);
 
   const handleLogout = () => {
     logout();

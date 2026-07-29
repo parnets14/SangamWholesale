@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // ⬅️ Add useNavigate
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../context/AdminContext";
 
 
@@ -34,9 +34,12 @@ console.log('login',login);
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-gray-800 text-white p-4 shadow-lg z-50 flex flex-col">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-center py-4 border-b border-gray-700">
-          Admin Panel
-        </h2>
+        <div className="flex flex-col items-center py-4 border-b border-gray-700">
+          <h2 className="text-lg font-bold text-center text-white">
+            Sangam Wholesale
+          </h2>
+          <span className="text-xs text-gray-400">Admin Panel</span>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto">

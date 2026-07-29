@@ -433,7 +433,7 @@ const ProfilePage = () => {
           </div>
         ) : profileError ? (
           <div className="text-center p-6">
-            <p className="text-red-600 mb-4">{profileError}</p>
+            <p className="text-[#702834] mb-4">{profileError}</p>
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -611,7 +611,7 @@ const ProfilePage = () => {
         </div>
       ) : addressError ? (
         <div className="text-center p-6">
-          <p className="text-red-600 mb-4">{addressError}</p>
+          <p className="text-[#702834] mb-4">{addressError}</p>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
@@ -676,7 +676,7 @@ const ProfilePage = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDeleteAddress(address.id)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-red-600"
+                        className="p-1.5 rounded-full text-gray-400 hover:text-[#702834]"
                         title="Delete address"
                       >
                         <Trash2 size={18} />
@@ -866,7 +866,7 @@ const ProfilePage = () => {
         </div>
       ) : ordersError ? (
         <div className="text-center p-6">
-          <p className="text-red-600 mb-4">{ordersError}</p>
+          <p className="text-[#702834] mb-4">{ordersError}</p>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
@@ -920,12 +920,12 @@ const ProfilePage = () => {
                       />
                     </svg>
                   )}
-                  {order.status === "Processing" && (
-                    <Clock size={18} className="text-yellow-500 mr-2" />
+                    {order.status === "Processing" && (
+                      <Clock size={18} className="mr-2" style={{ color: '#702834' }} />
                   )}
                   {order.status === "Cancelled" && (
                     <svg
-                      className="w-5 h-5 mr-2 text-red-500"
+                      className="w-5 h-5 mr-2 text-[#702834]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -949,8 +949,8 @@ const ProfilePage = () => {
                         : order.status === "Out for Delivery"
                         ? "text-purple-600"
                         : order.status === "Processing"
-                        ? "text-yellow-600"
-                        : "text-red-600"
+                        ? "text-[#702834]"
+                        : "text-[#702834]"
                     }
                   `}
                   >

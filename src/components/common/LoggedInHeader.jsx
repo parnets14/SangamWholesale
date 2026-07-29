@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogOut, Grid, User, ShoppingCart } from "lucide-react";
-import logo from "../../assets/images/Udaanlogo.png";
+import logo from "../../assets/images/sangamwholesale.png";
 const LoggedInHeader = ({ cartItems = [] }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -65,7 +65,8 @@ const LoggedInHeader = ({ cartItems = [] }) => {
     <motion.header
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-gradient-to-r from-green-700 to-emerald-600 text-white px-4 py-3 flex justify-between items-center fixed w-full top-0 z-50 shadow-lg"
+      className="text-gray-800 px-4 py-3 flex justify-between items-center fixed w-full top-0 z-50 shadow-sm backdrop-blur-md border-b border-white/20"
+      style={{ backgroundColor: 'rgba(255, 255, 255, 0.7)' }}
     >
       {/* Logo */}
       <motion.div
@@ -73,15 +74,15 @@ const LoggedInHeader = ({ cartItems = [] }) => {
         animate={{ scale: 1 }}
         className="flex items-center space-x-2"
       >
-        <Link to="/Home" className="text-xl font-bold flex items-center">
-          <div className="h-8 w-8 rounded-full shadow-md bg-white flex items-center justify-center overflow-hidden">
+        <Link to="/Home" className="flex items-center space-x-2">
+          <div className="h-12 w-12 rounded-full shadow-md bg-white flex items-center justify-center overflow-hidden border border-gray-200">
             <img
               src={logo}
-              alt="Udan Logo"
+              alt="Sangam Wholesale"
               className="h-full w-full object-cover"
             />
           </div>
-          Udaan
+          <span className="text-xl font-bold" style={{ color: '#702834' }}>Sangam Wholesale</span>
         </Link>
       </motion.div>
 
@@ -95,7 +96,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
         >
           <Link
             to="/categories"
-            className="flex items-center hover:text-green-200 transition-colors duration-300 group"
+            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-300 group"
           >
             <Grid
               size={18}
@@ -105,7 +106,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
           </Link>
           <Link
             to="/profile"
-            className="flex items-center hover:text-green-200 transition-colors duration-300 group"
+            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-300 group"
           >
             <User
               size={18}
@@ -117,17 +118,18 @@ const LoggedInHeader = ({ cartItems = [] }) => {
           {/* Cart Icon */}
           <motion.button
             onClick={handleCartClick}
-            className="relative p-2 rounded-full hover:bg-green-600 transition-colors"
+            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <ShoppingCart className="w-5 h-5" />
+            <ShoppingCart className="w-5 h-5" style={{ color: '#702834' }} />
             {cartItemCount > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 key={cartItemCount}
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                style={{ backgroundColor: '#702834' }}
               >
                 {cartItemCount}
               </motion.span>
@@ -138,7 +140,10 @@ const LoggedInHeader = ({ cartItems = [] }) => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleLogout}
-            className="bg-green-600 px-4 py-2 mr-24 rounded-full flex items-center hover:bg-green-700 transition-colors duration-300 shadow-md"
+            className="px-4 py-2 mr-24 rounded-full flex items-center transition-colors duration-300 shadow-md text-white"
+            style={{ backgroundColor: '#702834' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#5a1f29'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#702834'}
           >
             <LogOut size={18} className="mr-2" />
             Logout
@@ -151,7 +156,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="focus:outline-none"
+          className="focus:outline-none text-gray-700"
         >
           {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </motion.button>
@@ -165,7 +170,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
             initial="hidden"
             animate="visible"
             exit="hidden"
-            className="fixed inset-0 bg-gradient-to-br from-green-900 to-emerald-800 z-50 flex flex-col items-center justify-center space-y-6 md:hidden"
+            className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center space-y-6 md:hidden"
           >
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -175,7 +180,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
               <Link
                 to="/categories"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-2xl flex items-center hover:text-green-300 transition-colors group"
+                className="text-2xl flex items-center text-gray-800 hover:text-gray-600 transition-colors group"
               >
                 <Grid
                   size={24}
@@ -193,7 +198,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
               <Link
                 to="/profile"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-2xl flex items-center hover:text-green-300 transition-colors group"
+                className="text-2xl flex items-center text-gray-800 hover:text-gray-600 transition-colors group"
               >
                 <User
                   size={24}
@@ -210,7 +215,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
             >
               <button
                 onClick={handleCartClick}
-                className="text-2xl flex items-center hover:text-green-300 transition-colors group"
+                className="text-2xl flex items-center text-gray-800 hover:text-gray-600 transition-colors group"
               >
                 <ShoppingCart
                   size={24}
@@ -218,7 +223,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
                 />
                 Cart
                 {cartItemCount > 0 && (
-                  <span className="ml-2 bg-red-500 text-white text-sm rounded-full px-2 py-1 font-bold">
+                  <span className="ml-2 text-white text-sm rounded-full px-2 py-1 font-bold" style={{ backgroundColor: '#702834' }}>
                     {cartItemCount}
                   </span>
                 )}
@@ -232,7 +237,10 @@ const LoggedInHeader = ({ cartItems = [] }) => {
             >
               <button
                 onClick={handleLogout}
-                className="text-2xl bg-green-600 px-6 py-3 rounded-full flex items-center hover:bg-green-700 transition-colors shadow-md"
+                className="text-2xl px-6 py-3 rounded-full flex items-center transition-colors shadow-md text-white"
+                style={{ backgroundColor: '#702834' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#5a1f29'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#702834'}
               >
                 <LogOut size={24} className="mr-4" />
                 Logout
@@ -244,7 +252,7 @@ const LoggedInHeader = ({ cartItems = [] }) => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
               onClick={() => setIsMenuOpen(false)}
-              className="absolute top-6 right-6 text-white hover:text-green-300 transition-colors"
+              className="absolute top-6 right-6 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <X size={32} />
             </motion.button>

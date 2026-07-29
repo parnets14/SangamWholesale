@@ -260,7 +260,7 @@ const CheckoutPage = () => {
         {/* Delivery Address */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center mb-4">
-            <MapPin className="text-red-600 mr-2" size={20} />
+            <MapPin className="mr-2" size={20} style={{ color: '#702834' }} />
             <span className="font-semibold text-lg flex-1">Delivery Address</span>
             {token && addresses.length > 0 && (
               <button
@@ -272,14 +272,14 @@ const CheckoutPage = () => {
           {!token ? (
             <div className="flex flex-col items-center py-6">
               <span className="text-gray-500 mb-2">Please login to add delivery address</span>
-              <button className="bg-red-600 text-white px-4 py-2 rounded" onClick={() => navigate('/login')}>Login</button>
+              <button className="text-white px-4 py-2 rounded" style={{ backgroundColor: '#702834' }} onClick={() => navigate('/login')}>Login</button>
             </div>
           ) : loadingAddresses ? (
             <div className="flex items-center py-6"><span className="animate-spin mr-2">⏳</span>Loading addresses...</div>
           ) : addresses.length === 0 ? (
             <div className="flex flex-col items-center py-6">
               <span className="text-gray-500 mb-2">No delivery address found</span>
-              <button className="bg-red-600 text-white px-4 py-2 rounded" onClick={() => navigate('/address')}>Add Address</button>
+              <button className="text-white px-4 py-2 rounded" style={{ backgroundColor: '#702834' }} onClick={() => navigate('/address')}>Add Address</button>
             </div>
           ) : (
             <div className="bg-gray-100 rounded p-4">
@@ -297,7 +297,7 @@ const CheckoutPage = () => {
         {/* Order Summary */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center mb-4">
-            <ShoppingCart className="text-red-600 mr-2" size={20} />
+            <ShoppingCart className="mr-2" size={20} style={{ color: '#702834' }} />
             <span className="font-semibold text-lg">Order Summary ({cartItems.length} items)</span>
           </div>
           <div>
@@ -322,7 +322,7 @@ const CheckoutPage = () => {
         {/* Coupon */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center mb-4 cursor-pointer" onClick={() => setShowCoupons(!showCoupons)}>
-            <Tag className="text-red-600 mr-2" size={20} />
+            <Tag className="mr-2" size={20} style={{ color: '#702834' }} />
             <span className="font-semibold text-lg flex-1">Apply Coupon</span>
             <span className="text-gray-400">{showCoupons ? '▲' : '▼'}</span>
           </div>
@@ -334,7 +334,7 @@ const CheckoutPage = () => {
                 value={coupon}
                 onChange={e => setCoupon(e.target.value)}
               />
-              <button className="bg-red-600 text-white px-4 py-2 rounded">Apply</button>
+              <button className="text-white px-4 py-2 rounded" style={{ backgroundColor: '#702834' }}>Apply</button>
             </div>
           )}
                       </div>
@@ -343,7 +343,7 @@ const CheckoutPage = () => {
         {token && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex items-center mb-4">
-              <CreditCard className="text-red-600 mr-2" size={20} />
+              <CreditCard className="mr-2" size={20} style={{ color: '#702834' }} />
               <span className="font-semibold text-lg">Payment Options</span>
             </div>
             <div className="flex gap-4">
@@ -354,7 +354,7 @@ const CheckoutPage = () => {
                 <span className="mb-1"><CreditCard className="inline text-blue-500" size={18} /></span>
                 <span className="font-semibold">Udaan Credit</span>
                 <span className="text-xs text-gray-500">Pay in 7 days • No interest</span>
-                {paymentMethod === 'credit' && <Check className="text-red-600 mt-2" size={16} />}
+                {paymentMethod === 'credit' && <Check className="text-[#702834] mt-2" size={16} />}
               </button>
                         <button 
                 className={`flex-1 border rounded p-4 flex flex-col items-center ${paymentMethod === 'upi' ? 'border-red-600 bg-red-50' : 'border-gray-200'}`}
@@ -363,7 +363,7 @@ const CheckoutPage = () => {
                 <span className="mb-1"><Banknote className="inline text-green-500" size={18} /></span>
                 <span className="font-semibold">UPI Payment</span>
                 <span className="text-xs text-gray-500">Pay instantly via UPI</span>
-                {paymentMethod === 'upi' && <Check className="text-red-600 mt-2" size={16} />}
+                {paymentMethod === 'upi' && <Check className="text-[#702834] mt-2" size={16} />}
                         </button>
                         <button 
                 className={`flex-1 border rounded p-4 flex flex-col items-center ${paymentMethod === 'cod' ? 'border-red-600 bg-red-50' : 'border-gray-200'}`}
@@ -372,7 +372,7 @@ const CheckoutPage = () => {
                 <span className="mb-1"><Home className="inline text-yellow-500" size={18} /></span>
                 <span className="font-semibold">Cash on Delivery</span>
                 <span className="text-xs text-gray-500">Pay when you receive</span>
-                {paymentMethod === 'cod' && <Check className="text-red-600 mt-2" size={16} />}
+                {paymentMethod === 'cod' && <Check className="text-[#702834] mt-2" size={16} />}
                         </button>
                       </div>
           </div>
@@ -382,7 +382,7 @@ const CheckoutPage = () => {
         {token && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex items-center mb-4">
-              <Edit className="text-red-600 mr-2" size={20} />
+              <Edit className="mr-2" size={20} style={{ color: '#702834' }} />
               <span className="font-semibold text-lg">Order Notes</span>
             </div>
             <textarea
@@ -416,13 +416,14 @@ const CheckoutPage = () => {
               </div>
               
         {/* Error/Success */}
-        {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
+        {error && <div className="bg-red-100 text-[#702834] p-3 rounded mb-4">{error}</div>}
         {success && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{success}</div>}
 
         {/* Place Order Button */}
         <div className="sticky bottom-0 left-0 right-0 bg-white py-4 flex justify-end z-10">
           <button
-            className={`bg-red-600 text-white px-8 py-3 rounded font-bold text-lg shadow ${placingOrder || !token || !selectedAddress || cartItems.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`text-white px-8 py-3 rounded font-bold text-lg shadow ${placingOrder || !token || !selectedAddress || cartItems.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+            style={{ backgroundColor: '#702834' }}
             onClick={handlePlaceOrder}
             disabled={placingOrder || !token || !selectedAddress || cartItems.length === 0}
           >

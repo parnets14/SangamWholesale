@@ -65,7 +65,7 @@ const MobileAppSection = () => {
         >
           A Powerful Mobile App for 
           <br />
-          <span className="text-red-500">Quick & Easy Buying</span>
+          <span style={{ color: '#702834' }}>Quick & Easy Buying</span>
         </motion.h1>
 
         {/* Features Container */}
@@ -116,7 +116,8 @@ const MobileAppSection = () => {
             </NavLink>
             <NavLink
               to="/download-android"
-              className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-700 transition transform hover:scale-105 shadow-lg"
+              className="flex items-center gap-2 text-white px-6 py-3 rounded-full transition transform hover:scale-105 shadow-lg"
+              style={{ backgroundColor: '#702834' }}
             >
               <FaGooglePlay className="text-2xl" />
               Google Play

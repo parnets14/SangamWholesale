@@ -61,7 +61,7 @@ export const UserApiProvider = ({ children }) => {
               ? "bg-gradient-to-br from-amber-100 to-amber-50"
               : "bg-gradient-to-br from-purple-100 to-purple-50",
           border: index % 2 === 0 ? "border-amber-200" : "border-purple-200",
-          text: index % 2 === 0 ? "text-amber-700" : "text-purple-700",
+          text: index % 2 === 0 ? "text-[#702834]" : "text-purple-700",
           button:
             index % 2 === 0
               ? "bg-amber-100 hover:bg-amber-200"

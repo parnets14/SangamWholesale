@@ -7,7 +7,7 @@ import { NavLink } from 'react-router-dom';
 
 const AppDownloadSection = () => {
   return (
-    <div className="bg-gradient-to-r from-red-600 to-red-700 text-white py-16 px-4 sm:px-8 md:px-16 lg:px-24 overflow-hidden">
+    <div className="text-white py-16 px-4 sm:px-8 md:px-16 lg:px-24 overflow-hidden" style={{ background: 'linear-gradient(135deg, #F44400, #d63a00)' }}>
       <motion.div
         className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto"
         initial={{ opacity: 0, y: 50 }}

@@ -114,7 +114,7 @@ const OTPVerification = () => {
 
   if (!mobile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <p className="text-red-500 mb-4">
             Mobile number missing. Please go back.
@@ -125,7 +125,7 @@ const OTPVerification = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -134,10 +134,10 @@ const OTPVerification = () => {
       >
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-green-700 mb-2">Verify OTP</h2>
+          <h2 className="text-xl font-bold mb-2" style={{ color: '#702834' }}>Verify OTP</h2>
           <p className="text-sm text-gray-700">
             Enter the 6-digit OTP sent to{" "}
-            <span className="font-medium text-green-700">+91-{mobile}</span>
+            <span className="font-medium" style={{ color: '#702834' }}>+91-{mobile}</span>
           </p>
         </div>
 
@@ -151,11 +151,12 @@ const OTPVerification = () => {
             onKeyPress={handleKeyPress}
             disabled={loading}
             className={`
-              w-full px-4 py-3 border border-green-300 rounded-md 
-              focus:outline-none focus:ring-2 focus:ring-green-500 
+              w-full px-4 py-3 rounded-md border-2
+              focus:outline-none focus:ring-2
               text-center text-lg tracking-widest transition-all duration-200
               ${loading ? "opacity-50 cursor-not-allowed" : ""}
             `}
+            style={{ borderColor: '#702834' }}
             placeholder="123456"
           />
         </div>
@@ -169,12 +170,9 @@ const OTPVerification = () => {
           className={`
             w-full py-3 rounded-md text-white font-semibold 
             transition-all duration-300 mb-4
-            ${
-              otp.length === 6 && !loading
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-gray-300 cursor-not-allowed"
-            }
+            ${otp.length !== 6 || loading ? "bg-gray-300 cursor-not-allowed" : ""}
           `}
+          style={otp.length === 6 && !loading ? { backgroundColor: '#702834' } : {}}
         >
           {loading ? (
             <div className="flex items-center justify-center space-x-2">
@@ -192,10 +190,10 @@ const OTPVerification = () => {
             onClick={handleResendOTP}
             disabled={loading}
             className={`
-              text-sm text-green-600 hover:text-green-700 
-              transition-colors duration-200
+              text-sm font-medium transition-colors duration-200
               ${loading ? "opacity-50 cursor-not-allowed" : ""}
             `}
+            style={{ color: '#702834' }}
           >
             Didn't receive OTP? Resend
           </button>

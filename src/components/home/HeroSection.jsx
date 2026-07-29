@@ -170,7 +170,8 @@ const HeroSection = () => {
           >
             <NavLink
               to="/categories/food"
-              className="bg-red-500 text-persian-green font-semibold px-8 py-3 rounded-full hover:bg-opacity-90 transition-all duration-300 inline-block"
+              className="text-white font-semibold px-8 py-3 rounded-full transition-all duration-300 inline-block"
+              style={{ backgroundColor: '#702834' }}
             >
               Explore Now
             </NavLink>

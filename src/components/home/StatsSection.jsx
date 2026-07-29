@@ -85,7 +85,7 @@ const StatsSection = () => {
           className="text-3xl md:text-5xl font-bold mb-16 leading-tight text-gray-800"
         >
           Powering India's <br />
-          <span className="text-red-500">Business Ecosystem</span>
+          <span style={{ color: '#702834' }}>Business Ecosystem</span>
         </motion.h2>
 
         {/* Stats Cards */}
@@ -132,7 +132,8 @@ const StatsSection = () => {
         >
           <NavLink
             to="/register"
-            className="inline-flex items-center bg-red-500 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105 group"
+            className="inline-flex items-center text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transition-all duration-300 transform hover:scale-105 group"
+            style={{ backgroundColor: '#702834' }}
           >
             Start Your Journey
             <ArrowRight className="ml-3 text-white transition-transform group-hover:translate-x-1" /> 

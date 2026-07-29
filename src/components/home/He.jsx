@@ -119,12 +119,12 @@ const He = () => {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
           >
-            <div className="text-red-500 font-semibold text-sm mb-8 tracking-wider uppercase">
+            <div className="font-semibold text-sm mb-8 tracking-wider uppercase" style={{ color: '#702834' }}>
               Welcome to UBook
             </div>
             <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-16 text-gray-900">
               Buy stocks for your <br />
-              <span className="text-red-500">shop/business</span> easily
+              <span style={{ color: '#702834' }}>shop/business</span> easily
             </h1>
           </motion.div>
 
@@ -185,7 +185,8 @@ const He = () => {
         <Link to="/about">
         
         <button 
-          className="px-8 py-3 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 transition duration-300"
+          className="px-8 py-3 text-white rounded-full shadow-md transition duration-300"
+          style={{ backgroundColor: '#702834' }}
         >
           Get Started Now
         </button>

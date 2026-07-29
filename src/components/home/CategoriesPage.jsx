@@ -102,7 +102,8 @@ const CategoriesPage = () => {
               fetchCategories();
               fetchSubcategories();
             }}
-            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="px-6 py-2 text-white rounded-lg transition-colors"
+            style={{ backgroundColor: '#702834' }}
           >
             Try Again
           </button>

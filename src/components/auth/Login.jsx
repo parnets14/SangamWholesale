@@ -67,7 +67,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4 py-12">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -75,8 +75,8 @@ const Login = () => {
         className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-8"
       >
         <div className="text-center mb-8">
-          <Phone className="mx-auto text-green-600 mb-4" size={48} />
-          <h2 className="text-2xl font-bold text-green-800">Mobile Login</h2>
+          <Phone className="mx-auto mb-4" size={48} style={{ color: '#702834' }} />
+          <h2 className="text-2xl font-bold" style={{ color: '#702834' }}>Mobile Login</h2>
           <p className="text-gray-600 mt-2">
             Enter your 10 digit mobile number to continue
           </p>
@@ -85,7 +85,7 @@ const Login = () => {
         <div className="space-y-6">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Phone className="text-green-600" size={20} />
+              <Phone size={20} style={{ color: '#702834' }} />
             </div>
             <input
               type="tel"
@@ -97,11 +97,12 @@ const Login = () => {
               disabled={loading}
               className={`
                 w-full pl-10 pr-4 py-3 
-                border border-green-300 rounded-lg 
-                focus:outline-none focus:ring-2 focus:ring-green-500
+                rounded-lg border-2
+                focus:outline-none focus:ring-2
                 text-lg transition-all duration-200
                 ${loading ? "opacity-50 cursor-not-allowed" : ""}
               `}
+              style={{ borderColor: '#702834' }}
             />
           </div>
 
@@ -114,12 +115,9 @@ const Login = () => {
               w-full py-3 rounded-lg text-white font-semibold 
               flex items-center justify-center space-x-2
               transition-all duration-300
-              ${
-                mobile.length === 10 && !loading
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-gray-300 cursor-not-allowed"
-              }
+              ${mobile.length !== 10 || loading ? "bg-gray-300 cursor-not-allowed" : ""}
             `}
+            style={mobile.length === 10 && !loading ? { backgroundColor: '#702834' } : {}}
           >
             {loading ? (
               <>

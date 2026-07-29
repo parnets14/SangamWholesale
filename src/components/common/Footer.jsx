@@ -1,7 +1,7 @@
 
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
-import logo from "../../assets/images/Udaanlogo.png";
+import logo from "../../assets/images/sangamwholesale.png";
 const footerLinks = [
   {
     title: "Help",
@@ -56,18 +56,19 @@ const Footer = () => {
       <div className="flex flex-col md:flex-row gap-10 justify-between">
         {/* Logo Section */}
         <motion.div
-          className="flex-shrink-0"
+          className="flex-shrink-0 flex flex-col items-center"
           initial={{ scale: 0.8 }}
           whileInView={{ scale: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold">
+          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-lg border border-gray-700">
             <img
               src={logo}
-              alt="Udaan Logo"
-              className="w-16 h-16 object-contain"
+              alt="Sangam Wholesale"
+              className="w-full h-full object-cover"
             />
           </div>
+          <p className="mt-3 text-white font-bold text-lg text-center">Sangam Wholesale</p>
         </motion.div>
 
         {/* Footer Links */}

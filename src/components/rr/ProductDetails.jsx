@@ -151,12 +151,15 @@ const ProductDetails = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center pt-16">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">
+          <h2 className="text-xl font-semibold text-[#702834] mb-2">
             {error || "Product not found"}
           </h2>
           <button
             onClick={() => navigate(-1)}
-            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="px-6 py-2 text-white rounded-lg transition-colors"
+            style={{ backgroundColor: '#702834' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor='#5a1f29'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor='#702834'}
           >
             Go Back
           </button>
@@ -179,7 +182,7 @@ const ProductDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Enhanced Header */}
-      <div className="bg-red-700 text-white shadow-lg">
+      <div className="text-white shadow-lg" style={{ backgroundColor: '#702834' }}>
         <div className="flex items-center justify-between px-6 py-4">
           <button
             onClick={() => navigate(-1)}
@@ -263,8 +266,8 @@ const ProductDetails = () => {
           {/* Brand and Rating Row */}
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center">
-              <Award className="w-4 h-4 text-red-700 mr-1" />
-              <span className="text-sm font-semibold text-red-700">
+              <Award className="w-4 h-4 text-[#702834] mr-1" />
+              <span className="text-sm font-semibold text-[#702834]">
                 {product.brand || product.subcategoryName || "Premium Quality"}
               </span>
             </div>
@@ -295,7 +298,7 @@ const ProductDetails = () => {
           {/* Price Section */}
           <div className="mb-4">
             <div className="flex items-baseline mb-1">
-              <span className="text-3xl font-bold text-red-700 mr-2">
+              <span className="text-3xl font-bold text-[#702834] mr-2">
                 ₹{product.price}
               </span>
               <span className="text-sm text-gray-600 mr-3">
@@ -308,7 +311,7 @@ const ProductDetails = () => {
               )}
             </div>
             {hasDiscount && (
-              <p className="text-sm text-red-500 font-semibold">
+              <p className="text-sm text-[#702834] font-semibold">
                 You save ₹{product.discountPrice} {product.quantity}{" "}
                 {product.unit}
               </p>
@@ -323,7 +326,7 @@ const ProductDetails = () => {
         {/* Enhanced Quantity Selector */}
         <div className="mx-5 mb-5 bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center mb-4">
-            <ShoppingBag className="w-5 h-5 text-red-700 mr-2" />
+            <ShoppingBag className="w-5 h-5 text-[#702834] mr-2" />
             <h3 className="text-lg font-bold text-gray-800">Select Quantity</h3>
           </div>
           <div className="flex justify-between items-center">
@@ -333,7 +336,7 @@ const ProductDetails = () => {
                 className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all"
                 disabled={quantity <= 1}
               >
-                <Minus className="w-4 h-4 text-red-700" />
+                <Minus className="w-4 h-4 text-[#702834]" />
               </button>
               <div className="px-5 text-center">
                 <div className="text-lg font-bold text-gray-800">
@@ -345,7 +348,7 @@ const ProductDetails = () => {
                 onClick={() => handleQuantityChange("increase")}
                 className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all"
               >
-                <Plus className="w-4 h-4 text-red-700" />
+                <Plus className="w-4 h-4 text-[#702834]" />
               </button>
             </div>
             <div className="text-right">
@@ -353,7 +356,7 @@ const ProductDetails = () => {
                 Total: ₹{totalPrice}
               </div>
               {totalSavings > 0 && (
-                <div className="text-xs text-red-500 font-semibold">
+                <div className="text-xs text-[#702834] font-semibold">
                   Save: ₹{totalSavings}
                 </div>
               )}
@@ -363,7 +366,7 @@ const ProductDetails = () => {
         {/* Product Highlights */}
         <div className="mx-5 mb-5 bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center mb-4">
-            <CheckCircle className="w-5 h-5 text-red-700 mr-2" />
+            <CheckCircle className="w-5 h-5 text-[#702834] mr-2" />
             <h3 className="text-lg font-bold text-gray-800">
               Product Highlights
             </h3>
@@ -398,7 +401,7 @@ const ProductDetails = () => {
         {/* Product Specifications */}
         <div className="mx-5 mb-5 bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center mb-4">
-            <Info className="w-5 h-5 text-red-700 mr-2" />
+            <Info className="w-5 h-5 text-[#702834] mr-2" />
             <h3 className="text-lg font-bold text-gray-800">
               Product Information
             </h3>
@@ -444,11 +447,11 @@ const ProductDetails = () => {
           <div className="flex-1">
             <div className="text-sm text-gray-600 mb-1">Total Amount</div>
             <div className="flex items-baseline">
-              <span className="text-xl font-bold text-red-700 mr-2">
+              <span className="text-xl font-bold text-[#702834] mr-2">
                 ₹{totalPrice}
               </span>
               {totalSavings > 0 && (
-                <span className="text-xs text-red-500 font-semibold">
+                <span className="text-xs text-[#702834] font-semibold">
                   Save ₹{totalSavings}
                 </span>
               )}
@@ -457,11 +460,12 @@ const ProductDetails = () => {
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className={`flex items-center bg-red-700 hover:bg-red-800 text-white px-7 py-3 rounded-full font-bold shadow-lg transition-all ${
+            className={`flex items-center text-white px-7 py-3 rounded-full font-bold shadow-lg transition-all ${
               product.stock > 0
                 ? "hover:shadow-xl transform hover:scale-105"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
+            style={product.stock > 0 ? { backgroundColor: '#702834' } : {}}
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
             {product.stock > 0 ? "Add to Cart" : "Out of Stock"}

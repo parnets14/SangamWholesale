@@ -142,7 +142,8 @@ export default function About() {
           <span>{error}</span>
           <button
             onClick={retryFunction}
-            className="ml-auto bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+            className="ml-auto text-white px-4 py-2 rounded transition-colors"
+            style={{ backgroundColor: '#702834' }}
           >
             Retry
           </button>
@@ -170,7 +171,7 @@ export default function About() {
   return (
     <div className="bg-green-50 min-h-screen mt-16">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-red-400 to-red-500 text-white py-20 px-4">
+      <div className="text-white py-20 px-4" style={{ background: 'linear-gradient(135deg, #F44400, #d63a00)' }}>
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 transform transition-all duration-500 hover:scale-105">
             Transforming Ubook Distribution

@@ -14,7 +14,7 @@ import {
   LogOut,
   ShoppingCart,
 } from "lucide-react";
-import logo from "../../assets/images/Udaanlogo.png"; // Adjust the path as necessary
+import logo from "../../assets/images/sangamwholesale.png"; // Sangam Wholesale logo
 const Header = ({ cartItems = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,18 +94,11 @@ const Header = ({ cartItems = [] }) => {
     <motion.nav
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`
-        fixed w-full top-0 z-50 
-        ${
-          isScrolled
-            ? "bg-red-400 backdrop-blur-md shadow-md"
-            : "bg-gradient-to-r from-red-400 to-red-400"
-        }
-        transition-all duration-300 ease-in-out
-      `}
+      className="fixed w-full top-0 z-50 shadow-sm transition-all duration-300 ease-in-out backdrop-blur-md border-b border-white/20"
+      style={{ backgroundColor: 'rgba(255, 255, 255, 0.7)' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -113,15 +106,14 @@ const Header = ({ cartItems = [] }) => {
             className="flex-shrink-0 flex items-center"
           >
             <Link to="/" className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full shadow-md bg-white flex items-center justify-center overflow-hidden">
+              <div className="h-12 w-12 rounded-full shadow-md bg-white flex items-center justify-center overflow-hidden border border-gray-200">
                 <img
                   src={logo}
-                  alt="Profile"
+                  alt="Sangam Wholesale"
                   className="h-full w-full object-cover"
                 />
               </div>
-
-              <span className="text-2xl font-bold text-black">Udaan</span>
+              <span className="text-2xl font-bold" style={{ color: 'black' }}>Sangam  Wholesale</span>
             </Link>
           </motion.div>
 
@@ -153,7 +145,7 @@ const Header = ({ cartItems = [] }) => {
                   to={item.to}
                   className={({ isActive }) =>
                     `transition-colors font-medium ${
-                      isActive ? "text-white" : "text-white hover:text-white"
+                      isActive ? "text-gray-900 font-semibold" : "text-gray-700 hover:text-gray-900"
                     }`
                   }
                 >
@@ -169,7 +161,7 @@ const Header = ({ cartItems = [] }) => {
                     to="/profile"
                     className={({ isActive }) =>
                       `transition-colors font-medium flex items-center gap-2 ${
-                        isActive ? "text-white" : "text-white hover:text-white"
+                        isActive ? "text-gray-900 font-semibold" : "text-gray-700 hover:text-gray-900"
                       }`
                     }
                   >
@@ -180,17 +172,18 @@ const Header = ({ cartItems = [] }) => {
 
                 <motion.button
                   onClick={handleCartClick}
-                  className="relative p-2 rounded-full hover:bg-red-500 transition-colors"
+                  className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <ShoppingCart className="w-6 h-6 text-white" />
+                  <ShoppingCart className="w-6 h-6" style={{ color: '#702834' }} />
                   {cartItemCount > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       key={cartItemCount}
-                      className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                      className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+                      style={{ backgroundColor: '#702834' }}
                     >
                       {cartItemCount}
                     </motion.span>
@@ -204,17 +197,15 @@ const Header = ({ cartItems = [] }) => {
                   className="
                     px-4 py-2 
                     text-white 
-                    bg-gradient-to-r 
-                    from-black
-                    to-black
                     rounded-full 
-                    hover:from-red-600 
-                    hover:to-red-600 
                     transition-all 
                     flex 
                     items-center 
                     gap-2
                   "
+                  style={{ background: '#702834' }}
+                  onMouseEnter={e => e.currentTarget.style.background='#5a1f29'}
+                  onMouseLeave={e => e.currentTarget.style.background='#702834'}
                 >
                   <LogOut size={16} />
                   LOGOUT
@@ -229,17 +220,15 @@ const Header = ({ cartItems = [] }) => {
                     className="
                       px-4 py-2 
                       text-white 
-                      bg-gradient-to-r 
-                      from-red-700 
-                      to-red-600 
                       rounded-full 
-                      hover:from-green-600 
-                      hover:to-green-700 
                       transition-all 
                       flex 
                       items-center 
                       gap-2
                     "
+                    style={{ background: '#702834' }}
+                    onMouseEnter={e => e.currentTarget.style.background='#5a1f29'}
+                    onMouseLeave={e => e.currentTarget.style.background='#702834'}
                   >
                     <LogIn size={16} />
                     LOGIN
@@ -259,8 +248,8 @@ const Header = ({ cartItems = [] }) => {
               whileTap={{ scale: 0.9 }}
               className="
                 p-2 rounded-md 
-                text-red-800  
-                hover:bg-green-100 
+                text-gray-700
+                hover:bg-gray-100 
                 focus:outline-none
               "
             >
@@ -281,15 +270,8 @@ const Header = ({ cartItems = [] }) => {
             initial="hidden"
             animate="visible"
             exit="hidden"
-            className="
-              md:hidden 
-              bg-gradient-to-br 
-              from-red-300 
-              to-red-400 
-              shadow-lg 
-              rounded-b-2xl 
-              overflow-hidden
-            "
+            className="md:hidden shadow-lg rounded-b-2xl overflow-hidden border-t border-white/20 backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)' }}
           >
             <div className="px-4 py-6 space-y-4">
               <div className="relative mb-4">
@@ -325,7 +307,7 @@ const Header = ({ cartItems = [] }) => {
                   animate={{ opacity: 1, x: 0 }}
                   className="bg-green-100 rounded-lg p-3 mb-4"
                 >
-                  <p className="text-red-800 font-medium">
+                  <p className="font-medium" style={{ color: '#702834' }}>
                     Welcome, {user.name || user.phone || "User"}
                   </p>
                 </motion.div>
@@ -357,17 +339,17 @@ const Header = ({ cartItems = [] }) => {
                     className="
                       flex items-center 
                       px-4 py-3 
-                      text-red-800 
-                      hover:bg-green-100 
+                      text-gray-700
+                      hover:bg-gray-100 
                       rounded-xl 
                       transition-colors
                     "
                     onClick={() => setIsOpen(false)}
                   >
-                    <item.icon className="mr-3 text-black" size={24} />
+                    <item.icon className="mr-3 text-gray-600" size={24} />
                     {item.label}
                     {item.count > 0 && (
-                      <span className="ml-auto bg-amber-500 text-white text-xs rounded-full px-2 py-1 font-bold">
+                      <span className="ml-auto text-white text-xs rounded-full px-2 py-1 font-bold" style={{ backgroundColor: '#702834' }}>
                         {item.count}
                       </span>
                     )}
@@ -386,14 +368,14 @@ const Header = ({ cartItems = [] }) => {
                     className="
                       flex items-center 
                       px-4 py-3 
-                      text-red-800 
-                      hover:bg-red-100 
+                      text-gray-700
+                      hover:bg-gray-100 
                       rounded-xl 
                       transition-colors
                       w-full
                     "
                   >
-                    <LogOut className="mr-3 text-red-600" size={24} />
+                    <LogOut className="mr-3" style={{ color: '#702834' }} size={24} />
                     Logout
                   </button>
                 </motion.div>

@@ -67,13 +67,14 @@ const CategoryPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">
+              <h2 className="text-xl font-semibold text-[#702834] mb-2">
                 Error Loading Categories
               </h2>
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={fetchCategories}
-                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                className="px-6 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#702834' }}
               >
                 Try Again
               </button>
@@ -199,9 +200,10 @@ const CategoryPage = () => {
             disabled={!selectedCategory}
             className={`w-90 px-8 py-3 rounded-full font-medium text-white transition-all ${
               selectedCategory
-                ? "bg-red-500 hover:bg-red-600 shadow-md transform hover:scale-105"
+                ? "shadow-md transform hover:scale-105"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
+            style={selectedCategory ? { backgroundColor: '#702834' } : {}}
           >
             Continue
           </button>

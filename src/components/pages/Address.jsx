@@ -660,16 +660,18 @@ const Address = () => {
           {currentStep < steps.length - 1 ? (
             <button
               onClick={handleNext}
-              className="px-6 py-2 rounded bg-red-600 text-white font-semibold"
+              className="px-6 py-2 rounded text-white font-semibold"
+              style={{ backgroundColor: '#702834' }}
             >
               Continue
             </button>
           ) : (
             <button
               onClick={handleFinish}
-              className={`px-6 py-2 rounded bg-red-600 text-white font-semibold ${
+              className={`px-6 py-2 rounded text-white font-semibold ${
                 isLoading ? "opacity-60 cursor-not-allowed" : ""
               }`}
+              style={{ backgroundColor: '#702834' }}
               disabled={isLoading}
             >
               {isLoading

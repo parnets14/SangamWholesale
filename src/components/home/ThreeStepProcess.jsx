@@ -233,7 +233,8 @@ const ThreeStepProcess = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={isInView ? { scale: 1, opacity: 1 } : {}}
             transition={{ delay: 0.2 }}
-            className="inline-flex items-center bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-semibold py-2 px-6 rounded-full mb-6 shadow-md"
+            className="inline-flex items-center text-white text-sm font-semibold py-2 px-6 rounded-full mb-6 shadow-md"
+            style={{ backgroundColor: '#702834' }}
           >
             <Check className="w-4 h-4 mr-2" />
             Simple Process
@@ -241,7 +242,7 @@ const ThreeStepProcess = () => {
 
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
             Start Trading in{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">
+            <span style={{ color: '#702834' }}>
               {steps.length} Simple Steps
             </span>
           </h2>
@@ -260,7 +261,7 @@ const ThreeStepProcess = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg max-w-md mx-auto"
+              className="mt-4 p-3 bg-red-100 border border-red-300 text-[#702834] rounded-lg max-w-md mx-auto"
             >
               {error}
             </motion.div>
@@ -274,7 +275,7 @@ const ThreeStepProcess = () => {
             animate={{ opacity: 1 }}
             className="flex justify-center items-center py-20"
           >
-            <Loader className="w-8 h-8 animate-spin text-red-500 mr-3" />
+            <Loader className="w-8 h-8 animate-spin text-[#702834] mr-3" />
             <span className="text-gray-600 text-lg">Loading steps...</span>
           </motion.div>
         )}
@@ -368,7 +369,7 @@ const ThreeStepProcess = () => {
                 {index < steps.length - 1 && (
                   <div className="md:hidden flex items-center justify-center mt-6 mb-2">
                     <div className="h-1 w-16 bg-gradient-to-r from-red-300 to-orange-300 rounded-full"></div>
-                    <ArrowRight className="text-red-500 mx-1" size={20} />
+                    <ArrowRight className="text-[#702834] mx-1" size={20} />
                   </div>
                 )}
 
@@ -392,7 +393,7 @@ const ThreeStepProcess = () => {
                       transition={{ delay: 0.7 + index * 0.1 }}
                       className="absolute right-0 top-1/2 transform -translate-y-1/2"
                     >
-                      <ArrowRight className="text-red-500" size={24} />
+                      <ArrowRight className="text-[#702834]" size={24} />
                     </motion.div>
                   </motion.div>
                 )}
@@ -413,7 +414,6 @@ const ThreeStepProcess = () => {
             className="
               flex items-center gap-3 
               px-10 py-5 
-              bg-gradient-to-r from-red-600 to-orange-600 
               text-white font-semibold text-lg
               rounded-full 
               shadow-lg 
@@ -422,8 +422,8 @@ const ThreeStepProcess = () => {
               duration-300
               hover:shadow-xl
               relative overflow-hidden
-              group
-            "
+              group"
+            style={{ backgroundColor: '#702834' }}
           >
             <motion.span
               initial={{ opacity: 0, x: -10 }}
@@ -444,7 +444,7 @@ const ThreeStepProcess = () => {
 
             {/* Animated background */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-orange-600 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+           className="absolute inset-0 bg-gradient-to-r from-[#A81A3B/*  */] to-[#A81A3B] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               initial={{ x: "-100%" }}
               animate={{ x: isInView ? "100%" : "-100%" }}
               transition={{

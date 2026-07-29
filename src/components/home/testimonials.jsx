@@ -83,7 +83,7 @@ const TestimonialSection = () => {
         >
           <div className="relative">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-              <span className="text-red-600">Success</span> Stories from <br />
+              <span style={{ color: '#702834' }}>Success</span> Stories from <br />
               <span className="relative inline-block">
                 Across India
                 <motion.span
@@ -111,14 +111,16 @@ const TestimonialSection = () => {
           <div className="flex space-x-4 pt-6">
             <button
               onClick={handlePrevTestimonial}
-              className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="text-white p-3 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              style={{ backgroundColor: '#702834' }}
               aria-label="Previous testimonial"
             >
               <ChevronLeft size={24} />
             </button>
             <button
               onClick={handleNextTestimonial}
-              className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="text-white p-3 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              style={{ backgroundColor: '#702834' }}
               aria-label="Next testimonial"
             >
               <ChevronRight size={24} />
