@@ -225,14 +225,14 @@ const Subpage = () => {
                     variants={cardVariants}
                     whileHover="hover"
                     onClick={() => handleCategorySelect(category.id)}
-                    className={`p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                    className={`p-4 rounded-xl cursor-pointer transition-all duration-200 overflow-hidden ${
                       selectedCategory === category.id
                         ? "bg-blue-50 border-2 border-blue-200 shadow-md"
                         : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                         {category.icon ? (
                           <img
                             src={category.icon}
@@ -244,9 +244,9 @@ const Subpage = () => {
                           <ImageIcon className="w-6 h-6 text-gray-400" />
                         )}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h3
-                          className={`font-semibold ${
+                          className={`font-semibold truncate ${
                             selectedCategory === category.id
                               ? "text-blue-700"
                               : "text-gray-700"
@@ -254,7 +254,7 @@ const Subpage = () => {
                         >
                           {category.title}
                         </h3>
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-sm text-gray-500 line-clamp-2 break-words">
                           {category.description}
                         </p>
                       </div>
