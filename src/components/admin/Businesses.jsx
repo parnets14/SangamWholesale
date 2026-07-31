@@ -174,19 +174,10 @@ const Businesses = () => {
                   Business Name
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Type
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Category
+                  GST Number
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   User
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Front Image
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Back Image
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   isCompleted
@@ -205,10 +196,9 @@ const Businesses = () => {
                   <td className="px-4 py-3 whitespace-nowrap font-semibold">
                     {b.businessName}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {b.businessType}
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                    {b.gstNumber || <span className="text-gray-400">-</span>}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">{b.category}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {b.userId ? (
                       <div>
@@ -219,30 +209,6 @@ const Businesses = () => {
                           {b.userId.userDetails?.email || b.userId.phone || "-"}
                         </div>
                       </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {b.frontImage ? (
-                      <img
-                        src={`/business/${b.frontImage}`}
-                        alt="Front"
-                        className="w-16 h-12 object-cover rounded border"
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {b.backImage ? (
-                      <img
-                        src={`/business/${b.backImage}`}
-                        alt="Back"
-                        className="w-16 h-12 object-cover rounded border"
-                        onError={(e) => { e.target.style.display = "none"; }}
-                      />
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -318,9 +284,11 @@ const Businesses = () => {
               <div className="font-medium mb-2">
                 Business: {actionModal.business.businessName}
               </div>
-              <div className="text-sm text-gray-500 mb-2">
-                Type: {actionModal.business.businessType}
-              </div>
+              {actionModal.business.gstNumber && (
+                <div className="text-sm text-gray-500 mb-2">
+                  GST: {actionModal.business.gstNumber}
+                </div>
+              )}
               <div className="text-sm text-gray-500 mb-2">
                 User:{" "}
                 {actionModal.business.userId?.userDetails?.fullName || "-"}
