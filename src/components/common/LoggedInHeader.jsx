@@ -1,20 +1,18 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogOut, Grid, User, ShoppingCart } from "lucide-react";
 import logo from "../../assets/images/sangamwholesale.png";
-const LoggedInHeader = ({ cartItems = [] }) => {
+
+const LoggedInHeader = () => {
   const { logout, user } = useAuth();
+  const { getItemCount } = useCart();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Calculate total cart items
-  const getTotalCartItems = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  const cartItemCount = getTotalCartItems();
+  const cartItemCount = getItemCount();
 
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to logout?");

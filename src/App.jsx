@@ -97,9 +97,9 @@ function AppContent() {
     <div className="flex flex-col min-h-screen">
       {!isAdminRoute &&
         (isAuthenticated ? (
-          <LoggedInHeader cartItems={cartItems} />
+          <LoggedInHeader />
         ) : (
-          <Header cartItems={cartItems} />
+          <Header />
         ))}
 
       <main className="flex-grow">

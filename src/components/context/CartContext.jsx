@@ -1,7 +1,8 @@
 // src/context/CartContext.js
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const CartContext = createContext();
+const CART_STORAGE_KEY = 'sangam_cart_items';
 
 export const useCart = () => {
   const context = useContext(CartContext);
@@ -12,7 +13,24 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  // Initialize from localStorage on first load
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist to localStorage whenever cartItems changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+    } catch {
+      // localStorage quota exceeded — silently ignore
+    }
+  }, [cartItems]);
 
   const addToCart = (product) => {
     setCartItems(prevItems => {
@@ -42,7 +60,10 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  const clearCart = () => setCartItems([]);
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem(CART_STORAGE_KEY);
+  };
 
   const getTotal = () => cartItems.reduce(
     (total, item) => total + (parseInt((item.price + '').replace('₹', '').replace(',', '')) || 0) * item.quantity,

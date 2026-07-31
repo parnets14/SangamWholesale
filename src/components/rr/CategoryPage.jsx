@@ -1,13 +1,20 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Loader, Image as ImageIcon } from "lucide-react";
 import { useUserApi } from "../context/UserApiContext";
+import { useCart } from "../context/CartContext";
 
 const CategoryPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const { categories, loading, error, fetchCategories } = useUserApi();
+  const { getItemCount } = useCart();
+  const cartCount = getItemCount();
+
+  // Only show floating cart button on /categories route, not on /Home
+  const showFloatingCart = location.pathname === "/categories";
   console.log(categories, "categories");
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -208,6 +215,7 @@ const CategoryPage = () => {
             Continue
           </button>
         </motion.div>
+
       </div>
     </div>
   );

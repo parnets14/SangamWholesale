@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import {
   Search,
   Menu,
@@ -14,18 +15,17 @@ import {
   LogOut,
   ShoppingCart,
 } from "lucide-react";
-import logo from "../../assets/images/sangamwholesale.png"; // Sangam Wholesale logo
-const Header = ({ cartItems = [] }) => {
+import logo from "../../assets/images/sangamwholesale.png";
+
+const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const { getItemCount } = useCart();
   const navigate = useNavigate();
 
-  // Calculate total cart items
-  const getTotalCartItems = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
-  };
+  const cartItemCount = getItemCount();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,8 +87,6 @@ const Header = ({ cartItems = [] }) => {
       },
     },
   };
-
-  const cartItemCount = getTotalCartItems();
 
   return (
     <motion.nav

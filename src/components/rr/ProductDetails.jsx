@@ -199,12 +199,7 @@ const ProductDetails = () => {
             className="relative p-2 rounded-full hover:bg-red-600 transition-colors"
             aria-label="Cart"
           >
-            <CartIcon
-              itemCount={cartItems.reduce(
-                (total, item) => total + item.quantity,
-                0
-              )}
-            />
+            <CartIcon itemCount={cartItems.reduce((total, item) => total + item.quantity, 0)} />
           </button>
         </div>
       </div>
