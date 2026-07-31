@@ -2,6 +2,14 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { CheckCircle, ShieldCheck, Zap, Star } from "lucide-react";
+import toast from "react-hot-toast";
+
+// ─── SET REAL STORE LINKS HERE WHEN APP IS PUBLISHED ───────────────────────
+// Replace null with the actual URL string to activate the button
+// e.g. "https://play.google.com/store/apps/details?id=com.sangamwholesale"
+const GOOGLE_PLAY_URL = null;
+const APP_STORE_URL   = null;
+// ────────────────────────────────────────────────────────────────────────────
 
 const features = [
   {
@@ -22,7 +30,7 @@ const features = [
   {
     icon: Star,
     title: "Trusted by Thousands",
-    description: "Loved by retailers, schools, and libraries across India",
+    description: "Loved by retailers across India",
   },
 ];
 
@@ -39,17 +47,41 @@ export default function DownloadPage() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
 
+  const handleStoreClick = (store, url) => {
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      const isPlay = store === "Google Play";
+      toast(
+        `${store} app coming soon!\nHum jaldi launch kar rahe hain.`,
+        {
+          icon: isPlay
+            ? <FaGooglePlay style={{ color: "#702834", fontSize: "18px" }} />
+            : <FaApple style={{ color: "#000", fontSize: "18px" }} />,
+          duration: 3000,
+          style: {
+            borderLeft: "4px solid #702834",
+            fontWeight: "500",
+          },
+        }
+      );
+    }
+  };
+
   return (
-    <div className="bg-white min-h-screen mt-16">
+    <div className="bg-white min-h-screen mt-20">
       {/* Hero */}
-      <div className="text-white py-20 px-6 text-center" style={{ background: 'linear-gradient(135deg, #F44400, #d63a00)' }}>
+      <div
+        className="text-white py-20 px-6 text-center"
+        style={{ background: "linear-gradient(135deg, #702834, #4a1220)" }}
+      >
         <motion.h1
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-4xl md:text-5xl font-bold mb-4"
         >
-          Download the uBook App
+          Download the Sangam Wholesale App
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -20 }}
@@ -57,7 +89,7 @@ export default function DownloadPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg md:text-xl text-red-100 max-w-xl mx-auto"
         >
-          India's leading B2B book distribution platform — now in your pocket.
+          India's leading B2B wholesale platform — now in your pocket.
         </motion.p>
       </div>
 
@@ -75,7 +107,7 @@ export default function DownloadPage() {
             className="text-3xl font-bold text-gray-900 leading-snug"
           >
             A Powerful App for{" "}
-            <span className="text-red-500">Quick &amp; Easy Buying</span>
+            <span style={{ color: "#702834" }}>Quick &amp; Easy Buying</span>
           </motion.h2>
 
           <motion.div
@@ -88,10 +120,14 @@ export default function DownloadPage() {
               <motion.div
                 key={i}
                 variants={itemVariants}
-                className="bg-white p-4 rounded-xl shadow-md border-l-4 border-red-500 hover:shadow-lg transition-all duration-300"
+                className="bg-white p-4 rounded-xl shadow-md border-l-4 hover:shadow-lg transition-all duration-300"
+                style={{ borderLeftColor: "#702834" }}
               >
                 <div className="flex items-center gap-4">
-                  <f.icon className="w-9 h-9 text-red-500 shrink-0" />
+                  <f.icon
+                    className="w-9 h-9 shrink-0"
+                    style={{ color: "#702834" }}
+                  />
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">
                       {f.title}
@@ -113,52 +149,87 @@ export default function DownloadPage() {
             <p className="text-gray-600 font-medium mb-4 text-sm uppercase tracking-wide">
               Available on
             </p>
+
             <div className="flex flex-wrap gap-4">
-              {/* Replace href with real store links when available */}
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition transform hover:scale-105 shadow-lg"
+              {/* App Store */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleStoreClick("App Store", APP_STORE_URL)}
+                className="flex items-center gap-3 bg-black text-white px-6 py-3 rounded-full shadow-lg hover:bg-gray-800 transition-colors cursor-pointer"
                 aria-label="Download on App Store"
               >
-                <FaApple className="text-2xl" />
-                <span>
+                <FaApple className="text-2xl flex-shrink-0" />
+                <span className="text-left">
                   <span className="block text-xs leading-none opacity-75">
                     Download on the
                   </span>
-                  App Store
+                  <span className="block text-base font-semibold leading-tight mt-0.5">
+                    App Store
+                  </span>
                 </span>
-              </a>
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="flex items-center gap-2 text-white px-6 py-3 rounded-full transition transform hover:scale-105 shadow-lg"
-                style={{ backgroundColor: '#702834' }}
+                {!APP_STORE_URL && (
+                  <span className="ml-1 text-xs bg-white/20 rounded-full px-2 py-0.5 font-medium">
+                    Soon
+                  </span>
+                )}
+              </motion.button>
+
+              {/* Google Play */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleStoreClick("Google Play", GOOGLE_PLAY_URL)}
+                className="flex items-center gap-3 text-white px-6 py-3 rounded-full shadow-lg transition-colors cursor-pointer"
+                style={{ backgroundColor: "#702834" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#5a1f29")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#702834")
+                }
                 aria-label="Get it on Google Play"
               >
-                <FaGooglePlay className="text-2xl" />
-                <span>
+                <FaGooglePlay className="text-2xl flex-shrink-0" />
+                <span className="text-left">
                   <span className="block text-xs leading-none opacity-75">
                     Get it on
                   </span>
-                  Google Play
+                  <span className="block text-base font-semibold leading-tight mt-0.5">
+                    Google Play
+                  </span>
                 </span>
-              </a>
+                {!GOOGLE_PLAY_URL && (
+                  <span className="ml-1 text-xs bg-white/20 rounded-full px-2 py-0.5 font-medium">
+                    Soon
+                  </span>
+                )}
+              </motion.button>
             </div>
-            <p className="text-gray-400 text-xs mt-3">
-              App coming soon — stay tuned!
+
+            {/* Status note */}
+            <p className="text-gray-400 text-xs mt-3 flex items-center gap-1">
+              <span>🚀</span>
+              <span>
+                {GOOGLE_PLAY_URL || APP_STORE_URL
+                  ? "Click a button above to download the app."
+                  : "App launching soon — stay tuned for updates!"}
+              </span>
             </p>
           </motion.div>
         </div>
 
-        {/* Right: Video / Visual */}
+        {/* Right: Video */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={isInView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.8 }}
           className="flex-shrink-0 flex justify-center"
         >
-          <div className="relative bg-red-100 rounded-full w-64 h-64 md:w-80 md:h-80 flex items-center justify-center shadow-2xl overflow-hidden hover:scale-105 transition-transform duration-300">
+          <div
+            className="relative rounded-full w-64 h-64 md:w-80 md:h-80 flex items-center justify-center shadow-2xl overflow-hidden hover:scale-105 transition-transform duration-300"
+            style={{ backgroundColor: "#f9eef0" }}
+          >
             <video
               src="/m1.mp4"
               className="w-full h-full object-cover rounded-full"

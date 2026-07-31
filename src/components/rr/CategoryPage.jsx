@@ -50,7 +50,7 @@ const CategoryPage = () => {
 
   if (loading) {
     return (
-      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 pt-24 pb-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <Loader className="w-8 h-8 animate-spin text-gray-600 mb-4" />
@@ -63,7 +63,7 @@ const CategoryPage = () => {
 
   if (error) {
     return (
-      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 pt-24 pb-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -87,7 +87,7 @@ const CategoryPage = () => {
 
   if (categories.length === 0) {
     return (
-      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 pt-24 pb-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -111,7 +111,7 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-w-0 bg-gradient-to-br from-gray-50 to-gray-100 px-4 pt-24 pb-12 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

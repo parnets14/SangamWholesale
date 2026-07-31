@@ -169,14 +169,12 @@ function AppContent() {
           <Route
             path="/categories"
             element={
-              <div className="container mx-auto p-4">
-                <CategoryPage
-                  currentCategory={currentCategory}
-                  currentSubcategory={currentSubcategory}
-                  setCurrentCategory={setCurrentCategory}
-                  setCurrentSubcategory={setCurrentSubcategory}
-                />
-              </div>
+              <CategoryPage
+                currentCategory={currentCategory}
+                currentSubcategory={currentSubcategory}
+                setCurrentCategory={setCurrentCategory}
+                setCurrentSubcategory={setCurrentSubcategory}
+              />
             }
           />
 
