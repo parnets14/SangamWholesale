@@ -44,14 +44,24 @@ const OTPVerification = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Store user data and token in AuthContext
-        login(data.user, data.token);
+        const userData = data.user;
+        const authToken = data.token;
 
-        toast.success("Login successful!");
+        // Check if this is a new user (no name or no businessName set yet)
+        const isNewUser = !userData?.name || !userData?.businessName;
 
-        // Navigate to home page
-        // navigate("/Home");
-        navigate("/Home", { replace: true });
+        if (isNewUser) {
+          // New user — go through registration steps
+          toast.success("OTP verified! Please complete your profile.");
+          navigate("/personal-details", {
+            state: { mobile, token: authToken, user: userData },
+          });
+        } else {
+          // Returning user — log in directly
+          login(userData, authToken);
+          toast.success("Login successful!");
+          navigate("/Home", { replace: true });
+        }
       } else {
         toast.error(data.message || "Invalid OTP. Please try again.");
       }

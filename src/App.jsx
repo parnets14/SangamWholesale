@@ -22,6 +22,8 @@ import LoggedInFooter from "./components/common/LoggedInFooter";
 import WelcomePage from "./components/pages/WelcomePage";
 import Login from "./components/auth/Login";
 import OTPVerification from "./components/auth/OTPVerification";
+import PersonalDetails from "./components/auth/PersonalDetails";
+import BusinessDetails from "./components/auth/BusinessDetails";
 import NotFoundPage from "./components/pages/NotFoundPage";
 import CategoryPage from "./components/rr/CategoryPage";
 
@@ -108,9 +110,13 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Navigate to="/login" replace />} />
           <Route path="/otp" element={<OTPVerification />} />
+          <Route path="/personal-details" element={<PersonalDetails />} />
+          <Route path="/business-details" element={<BusinessDetails />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/about" element={<About />} />
           <Route path="/download" element={<DownloadPage />} />
+          <Route path="/download-android" element={<DownloadPage />} />
+          <Route path="/download-ios" element={<DownloadPage />} />
           <Route path="/Home" element={<HomePage />} />
 
           {/* Category Routes with Cart State */}

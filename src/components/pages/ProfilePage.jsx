@@ -13,22 +13,35 @@ import {
   CheckCircle,
   Truck,
   Package,
+  Phone,
+  Mail,
+  Briefcase,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
   // Use AuthContext for user and token
   const { user: authUser, token } = useAuth();
+  const navigate = useNavigate();
 
   // User Profile State
   const [user, setUser] = useState({
     name: authUser?.fullName || authUser?.name || "",
     email: authUser?.email || "",
     phone: authUser?.phone || "",
+    businessName: authUser?.businessName || "",
+    businessPhone: authUser?.businessPhone || "",
+    gst: authUser?.gst || "",
     avatar: authUser?.profileImage
       ? `https://sangamwholesale.com/profileImage/${authUser.profileImage}`
       : null,
   });
+
+  // Avatar upload state
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   // Addresses State
   const [addresses, setAddresses] = useState([]);
@@ -83,17 +96,23 @@ const ProfilePage = () => {
         const data = await response.json();
         if (data.success && data.user) {
           setUser({
-            name: data.user.fullName || "",
+            name: data.user.fullName || data.user.name || "",
             email: data.user.email || "",
             phone: data.user.phone || "",
+            businessName: data.user.businessName || "",
+            businessPhone: data.user.businessPhone || "",
+            gst: data.user.gst || "",
             avatar: data.user.profileImage
               ? `https://sangamwholesale.com/profileImage/${data.user.profileImage}`
               : null,
           });
           setEditedUser({
-            name: data.user.fullName || "",
+            name: data.user.fullName || data.user.name || "",
             email: data.user.email || "",
             phone: data.user.phone || "",
+            businessName: data.user.businessName || "",
+            businessPhone: data.user.businessPhone || "",
+            gst: data.user.gst || "",
             avatar: data.user.profileImage
               ? `https://sangamwholesale.com/profileImage/${data.user.profileImage}`
               : null,
@@ -256,6 +275,25 @@ const ProfilePage = () => {
   // Profile Edit Handlers
   const handleProfileEdit = () => {
     setIsEditing(true);
+    setAvatarPreview(null);
+    setAvatarFile(null);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleProfileSave = async () => {
@@ -265,10 +303,39 @@ const ProfilePage = () => {
     }
     try {
       setProfileLoading(true);
+
+      // If a new image was selected, upload it first
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("profileImage", avatarFile);
+        try {
+          const imgRes = await fetch(
+            "https://sangamwholesale.com/api/user/upload-profile-image",
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            }
+          );
+          const imgData = await imgRes.json();
+          if (imgRes.ok && imgData.profileImage) {
+            setUser((prev) => ({
+              ...prev,
+              avatar: `https://sangamwholesale.com/profileImage/${imgData.profileImage}`,
+            }));
+          }
+        } catch (imgErr) {
+          console.error("Image upload failed:", imgErr);
+        }
+      }
+
       const profileData = {
         fullName: editedUser.name.trim(),
         email: editedUser.email.trim(),
         phone: editedUser.phone.trim(),
+        businessName: editedUser.businessName?.trim() || "",
+        businessPhone: editedUser.businessPhone?.trim() || "",
+        gst: editedUser.gst?.trim().toUpperCase() || "",
       };
       const response = await fetch(
         "https://sangamwholesale.com/api/user/profile",
@@ -283,8 +350,10 @@ const ProfilePage = () => {
       );
       const result = await response.json();
       if (result.success) {
-        setUser(editedUser);
+        setUser((prev) => ({ ...prev, ...editedUser }));
         setIsEditing(false);
+        setAvatarFile(null);
+        setAvatarPreview(null);
         alert("Profile updated successfully!");
       } else {
         alert(result.message || "Failed to update profile");
@@ -445,20 +514,53 @@ const ProfilePage = () => {
           </div>
         ) : (
           <div className="flex flex-col md:flex-row items-start gap-6">
-            <div className="relative">
-              <img
-                src={user.avatar || PLACEHOLDER_IMAGE}
-                alt={user.name}
-                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg"
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              {/* Hidden file input */}
+              <input
+                type="file"
+                id="avatarUpload"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
               />
-              {isEditing && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute -bottom-2 -right-2 bg-indigo-500 text-white p-2 rounded-full shadow-md"
+
+              {/* Avatar image */}
+              <div className="relative w-24 h-24 md:w-32 md:h-32">
+                <img
+                  src={avatarPreview || user.avatar || PLACEHOLDER_IMAGE}
+                  alt={user.name || "Profile"}
+                  className="w-full h-full rounded-full object-cover border-4 shadow-lg"
+                  style={{ borderColor: "#702834" }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "U")}&background=702834&color=fff&size=128`;
+                  }}
+                />
+
+                {/* Edit overlay — only in edit mode */}
+                {isEditing && (
+                  <label
+                    htmlFor="avatarUpload"
+                    className="absolute inset-0 rounded-full flex items-center justify-center cursor-pointer transition-opacity"
+                    style={{ backgroundColor: "rgba(112,40,52,0.55)" }}
+                  >
+                    <div className="text-center text-white">
+                      <Edit size={20} className="mx-auto mb-1" />
+                      <span className="text-xs font-medium">Change</span>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              {/* Preview badge */}
+              {avatarPreview && (
+                <span
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-xs text-white px-2 py-0.5 rounded-full whitespace-nowrap"
+                  style={{ backgroundColor: "#702834" }}
                 >
-                  <Edit size={16} />
-                </motion.button>
+                  New photo
+                </span>
               )}
             </div>
             <div className="flex-1 w-full">
@@ -478,7 +580,7 @@ const ProfilePage = () => {
                             name: e.target.value,
                           }))
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-colors"
                         placeholder="Full Name"
                       />
                     </div>
@@ -495,7 +597,7 @@ const ProfilePage = () => {
                             email: e.target.value,
                           }))
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-colors"
                         placeholder="Email"
                       />
                     </div>
@@ -513,10 +615,76 @@ const ProfilePage = () => {
                           phone: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-colors"
                       placeholder="Phone Number"
                     />
                   </div>
+
+                  {/* Business Info */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                      Business Info
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Business Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editedUser.businessName}
+                          onChange={(e) =>
+                            setEditedUser((prev) => ({
+                              ...prev,
+                              businessName: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-colors"
+                          placeholder="Business Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Business Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={editedUser.businessPhone}
+                          onChange={(e) =>
+                            setEditedUser((prev) => ({
+                              ...prev,
+                              businessPhone: e.target.value.replace(/\D/g, ""),
+                            }))
+                          }
+                          maxLength={10}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-colors"
+                          placeholder="Business Phone"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        GST Number{" "}
+                        <span className="text-gray-400 font-normal">
+                          (Optional)
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editedUser.gst}
+                        onChange={(e) =>
+                          setEditedUser((prev) => ({
+                            ...prev,
+                            gst: e.target.value.toUpperCase(),
+                          }))
+                        }
+                        maxLength={15}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent tracking-wider font-mono transition-colors"
+                        placeholder="e.g. 22AAAAA0000A1Z5"
+                      />
+                    </div>
+                  </div>
+
                   <div className="flex justify-end space-x-3 pt-2">
                     <motion.button
                       whileHover={{ scale: 1.03 }}
@@ -530,7 +698,8 @@ const ProfilePage = () => {
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={handleProfileSave}
-                      className="px-5 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center"
+                      className="px-5 py-2 text-white rounded-lg font-medium transition-colors flex items-center"
+                      style={{ backgroundColor: "#702834" }}
                       disabled={profileLoading}
                     >
                       <Save size={18} className="mr-2" />
@@ -543,46 +712,62 @@ const ProfilePage = () => {
                   <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
                     {user.name}
                   </h2>
-                  <div className="flex items-center text-gray-600">
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <span>{user.email}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      />
-                    </svg>
-                    <span>{user.phone}</span>
-                  </div>
+
+                  {/* Email */}
+                  {user.email && (
+                    <div className="flex items-center text-gray-600 gap-2">
+                      <Mail size={18} style={{ color: "#702834" }} />
+                      <span>{user.email}</span>
+                    </div>
+                  )}
+
+                  {/* Phone */}
+                  {user.phone && (
+                    <div className="flex items-center text-gray-600 gap-2">
+                      <Phone size={18} style={{ color: "#702834" }} />
+                      <span>+91 {user.phone}</span>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  {(user.businessName || user.businessPhone || user.gst) && (
+                    <div className="border-t border-gray-100 pt-3 mt-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                        Business Info
+                      </p>
+
+                      {user.businessName && (
+                        <div className="flex items-center text-gray-600 gap-2 mb-2">
+                          <Briefcase size={18} style={{ color: "#702834" }} />
+                          <span className="font-medium">{user.businessName}</span>
+                        </div>
+                      )}
+
+                      {user.businessPhone && (
+                        <div className="flex items-center text-gray-600 gap-2 mb-2">
+                          <Phone size={18} style={{ color: "#702834" }} />
+                          <span>+91 {user.businessPhone}</span>
+                        </div>
+                      )}
+
+                      {user.gst && (
+                        <div className="flex items-center text-gray-600 gap-2">
+                          <FileText size={18} style={{ color: "#702834" }} />
+                          <span className="tracking-wider font-mono text-sm">
+                            GST: {user.gst}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="pt-4">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleProfileEdit}
-                      className="px-5 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center"
+                      className="px-5 py-2 text-white rounded-lg font-medium transition-colors flex items-center"
+                      style={{ backgroundColor: "#702834" }}
                     >
                       <Edit size={18} className="mr-2" />
                       Edit Profile
@@ -1036,7 +1221,9 @@ const ProfilePage = () => {
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            onClick={() => navigate("/Home")}
+            className="px-6 py-3 text-white rounded-lg font-medium transition-colors"
+            style={{ backgroundColor: "#702834" }}
           >
             Start Shopping
           </motion.button>
