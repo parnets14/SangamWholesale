@@ -11,8 +11,15 @@ export const UserApiProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
-  // API base URL
-  const API_BASE_URL = "https://sangamwholesale.com/api";
+  // API base URL — relative so vite proxy handles dev, same-origin handles production
+  const API_BASE_URL = "/api";
+
+  // Helper: build image URL relative to server static folder
+  const getImageUrl = (folder, filename) => {
+    if (!filename) return null;
+    if (filename.startsWith("http")) return filename;
+    return `/${folder}/${filename}`;
+  };
 
   // Helper function to make API calls (with or without auth)
   const makeRequest = async (endpoint, options = {}) => {
@@ -54,7 +61,7 @@ export const UserApiProvider = ({ children }) => {
           title: category.name,
           description: category.description,
           icon: category.image
-            ? `https://sangamwholesale.com/categories/${category.image}`
+            ? getImageUrl("categories", category.image)
             : null,
           color:
             index % 2 === 0
@@ -95,7 +102,7 @@ export const UserApiProvider = ({ children }) => {
           name: subcategory.name,
           description: subcategory.description,
           image: subcategory.image
-            ? `https://sangamwholesale.com/subcategories/${subcategory.image}`
+            ? getImageUrl("subcategories", subcategory.image)
             : null,
           categoryId: subcategory.category._id,
           categoryName: subcategory.category.name,
@@ -135,7 +142,7 @@ export const UserApiProvider = ({ children }) => {
         quantity: product.quantity,
         brand: product.brand || null,
         image: product.image
-          ? `/products/${product.image}`
+          ? getImageUrl("products", product.image)
           : null,
         subcategoryId: product.subcategory._id,
         subcategoryName: product.subcategory.name,
@@ -180,7 +187,7 @@ export const UserApiProvider = ({ children }) => {
         quantity: product.quantity,
         brand: product.brand || null,
         image: product.image
-          ? `/products/${product.image}`
+          ? getImageUrl("products", product.image)
           : null,
         subcategoryId: product.subcategory._id,
         subcategoryName: product.subcategory.name,
@@ -236,7 +243,7 @@ export const UserApiProvider = ({ children }) => {
           name: subcategory.name,
           description: subcategory.description,
           image: subcategory.image
-            ? `https://sangamwholesale.com/subcategories/${subcategory.image}`
+            ? getImageUrl("subcategories", subcategory.image)
             : null,
           categoryId: subcategory.category._id,
           categoryName: subcategory.category.name,

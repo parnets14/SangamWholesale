@@ -10,7 +10,19 @@ export default defineConfig({
         target: 'http://localhost:1083',
         changeOrigin: true,
       },
-      // Proxy uploaded images (founders/, team/, banners/, etc.)
+      // Proxy uploaded images — must match the folders multer saves to
+      '/categories': {
+        target: 'http://localhost:1083',
+        changeOrigin: true,
+      },
+      '/subcategories': {
+        target: 'http://localhost:1083',
+        changeOrigin: true,
+      },
+      '/products': {
+        target: 'http://localhost:1083',
+        changeOrigin: true,
+      },
       '/founders': {
         target: 'http://localhost:1083',
         changeOrigin: true,
@@ -27,15 +39,7 @@ export default defineConfig({
         target: 'http://localhost:1083',
         changeOrigin: true,
       },
-      '/products': {
-        target: 'http://localhost:1083',
-        changeOrigin: true,
-      },
       '/business': {
-        target: 'http://localhost:1083',
-        changeOrigin: true,
-      },
-      '/subcategories': {
         target: 'http://localhost:1083',
         changeOrigin: true,
       },

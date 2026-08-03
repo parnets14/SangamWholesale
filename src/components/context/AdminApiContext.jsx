@@ -11,8 +11,8 @@ export const AdminApiProvider = ({ children }) => {
 
   console.log("AdminApiProvider initialized with token:", token);
 
-  // API base URL
-  const API_BASE_URL = "https://sangamwholesale.com/api";
+  // API base URL — relative path works for both dev (vite proxy) and production (same origin)
+  const API_BASE_URL = "/api";
 
   // Helper function to make authenticated API calls
   // If body is FormData, Content-Type is NOT set manually (browser sets it with boundary)

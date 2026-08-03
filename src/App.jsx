@@ -44,6 +44,7 @@ import ProfilePage from "./components/pages/ProfilePage";
 import About from "./components/home/About";
 import Address from "./components/pages/Address";
 import DownloadPage from "./components/pages/DownloadPage";
+import PrivacyPolicy from "./components/pages/PrivacyPolicy";
 import { Navigate } from "react-router-dom";
 
 // Admin Components
@@ -117,6 +118,8 @@ function AppContent() {
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/download-android" element={<DownloadPage />} />
           <Route path="/download-ios" element={<DownloadPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/Home" element={<HomePage />} />
 
           {/* Category Routes with Cart State */}

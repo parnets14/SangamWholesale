@@ -211,7 +211,7 @@ const ProductDetails = () => {
           <img
             src={
               product.image ||
-              `https://sangamwholesale.com/subcategories/${subcategory.image}`
+              `https://sangamwholesale.com/subcategories/${subcategory?.image || ""}`
             }
             alt={product.name}
             className="w-full h-full object-contain"

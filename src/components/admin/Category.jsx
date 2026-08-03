@@ -22,6 +22,13 @@ const Category = () => {
   });
   const [imagePreview, setImagePreview] = useState(null);
 
+  // Build image URL — relative path so it works in both dev (vite proxy) and production
+  const getCategoryImageUrl = (image) => {
+    if (!image) return null;
+    if (image.startsWith("http")) return image;
+    return `/categories/${image}`;
+  };
+
   // Load categories on component mount
   useEffect(() => {
     fetchCategories().catch((err) => {
@@ -87,9 +94,7 @@ const Category = () => {
       image: null,
     });
     setImagePreview(
-      category.image
-        ? `https://sangamwholesale.com/categories/${category.image}`
-        : null || dummyimage
+      category.image ? getCategoryImageUrl(category.image) : dummyimage
     );
     setIsModalVisible(true);
   };
@@ -227,7 +232,7 @@ const Category = () => {
               <div className="h-48 bg-gray-200 flex items-center justify-center">
                 {category.image ? (
                   <img
-                    src={`https://sangamwholesale.com/categories/${category.image}`}
+                    src={getCategoryImageUrl(category.image)}
                     alt={category.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {

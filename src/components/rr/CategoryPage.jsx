@@ -138,7 +138,7 @@ const CategoryPage = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 px-4 sm:px-0 mb-12"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 px-4 sm:px-0 mb-12"
         >
           {categories.map((category) => (
             <motion.div
@@ -146,50 +146,51 @@ const CategoryPage = () => {
               variants={cardVariants}
               whileHover="hover"
               onClick={() => setSelectedCategory(category.id)}
-              className={`rounded-2xl p-6 shadow-sm ${category.color} border ${
-                category.border
-              } cursor-pointer overflow-hidden relative group transition-all ${
+              className={`rounded-xl shadow-sm bg-white border cursor-pointer overflow-hidden relative group transition-all ${
                 selectedCategory === category.id
-                  ? "ring-2 ring-offset-2 ring-gray-400"
-                  : ""
+                  ? "ring-2 ring-offset-2 ring-[#702834]"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
             >
               {selectedCategory === category.id && (
-                <div className="absolute top-4 right-4 bg-white p-1 rounded-full">
-                  <Check className="w-5 h-5 text-green-600" />
+                <div className="absolute top-3 right-3 z-10 bg-white p-0.5 rounded-full shadow">
+                  <Check className="w-4 h-4 text-green-600" />
                 </div>
               )}
-              <div className="flex flex-col items-center text-center h-full">
-                <div
-                  className={`p-4 rounded-xl ${category.color} border ${category.border} mb-6 transition-transform group-hover:scale-110 relative`}
-                >
-                  {category.icon ? (
-                    <>
-                      <img
-                        src={category.icon}
-                        alt={category.title}
-                        className="w-16 h-16 object-contain"
-                        loading="lazy"
-                        onError={handleImageError}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center hidden">
-                        <ImageIcon className="w-16 h-16 text-gray-400" />
-                      </div>
-                    </>
-                  ) : (
-                    <ImageIcon className="w-16 h-16 text-gray-400" />
-                  )}
-                </div>
-                <h2 className={`text-xl font-bold mb-2 ${category.text}`}>
+
+              {/* Image */}
+              <div className="relative w-full h-44 overflow-hidden bg-gray-100">
+                {category.icon ? (
+                  <>
+                    <img
+                      src={category.icon}
+                      alt={category.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      onError={handleImageError}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center hidden">
+                      <ImageIcon className="w-12 h-12 text-gray-400" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Card Body */}
+              <div className="p-4">
+                <h2 className="text-base font-bold text-gray-800 mb-1">
                   {category.title}
                 </h2>
-                <p className="text-sm text-gray-600 mb-6 px-2">
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed line-clamp-2">
                   {category.description}
                 </p>
-                <div
-                  className={`mt-auto inline-flex items-center justify-center p-3 rounded-full ${category.button} transition-colors`}
-                >
-                  <ArrowRight className="w-5 h-5 text-gray-700" />
+                <div className="flex items-center text-xs font-medium text-gray-500 group-hover:text-[#702834] transition-colors">
+                  <span>Click to select</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>
             </motion.div>
@@ -205,14 +206,14 @@ const CategoryPage = () => {
           <button
             onClick={handleContinue}
             disabled={!selectedCategory}
-            className={`w-90 px-8 py-3 rounded-full font-medium text-white transition-all ${
+            className={`px-10 py-3 rounded-full font-medium text-white transition-all text-sm ${
               selectedCategory
                 ? "shadow-md transform hover:scale-105"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
             style={selectedCategory ? { backgroundColor: '#702834' } : {}}
           >
-            Continue
+            Select a category to continue
           </button>
         </motion.div>
 

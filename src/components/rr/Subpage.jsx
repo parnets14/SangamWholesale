@@ -404,8 +404,7 @@ const Subpage = () => {
                           <div className="relative">
                             <img
                               src={
-                                product.image ||
-                                "https://sangamwholesale.com/subcategories/${subcategory.image}"
+                                product.image || "/placeholder-product.png"
                               }
                               alt={product.name}
                               className="w-full h-48 object-cover"
