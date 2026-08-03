@@ -116,25 +116,23 @@ const Category = () => {
     }
 
     try {
-      const categoryData = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-      };
+      const fd = new FormData();
+      fd.append("name", formData.name.trim());
+      fd.append("description", formData.description.trim());
+      if (formData.image) {
+        fd.append("image", formData.image);
+      }
 
       if (editingCategory) {
-        await updateCategory(editingCategory._id, categoryData);
+        await updateCategory(editingCategory._id, fd);
         toast.success("Category updated successfully");
       } else {
-        await createCategory(categoryData);
+        await createCategory(fd);
         toast.success("Category created successfully");
       }
 
       // Reset form and close modal
-      setFormData({
-        name: "",
-        description: "",
-        image: null,
-      });
+      setFormData({ name: "", description: "", image: null });
       setImagePreview(null);
       setIsModalVisible(false);
       setEditingCategory(null);

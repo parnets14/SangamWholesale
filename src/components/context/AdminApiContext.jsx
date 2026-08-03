@@ -15,18 +15,22 @@ export const AdminApiProvider = ({ children }) => {
   const API_BASE_URL = "https://sangamwholesale.com/api";
 
   // Helper function to make authenticated API calls
+  // If body is FormData, Content-Type is NOT set manually (browser sets it with boundary)
   const makeAuthenticatedRequest = async (endpoint, options = {}) => {
     if (!token) {
       throw new Error("No authentication token available");
     }
 
+    const isFormData = options.body instanceof FormData;
+
     const defaultOptions = {
+      ...options,
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        // Do NOT set Content-Type for FormData — browser does it automatically with boundary
+        ...(!isFormData && { "Content-Type": "application/json" }),
         ...options.headers,
       },
-      ...options,
     };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, defaultOptions);
@@ -38,7 +42,12 @@ export const AdminApiProvider = ({ children }) => {
     }
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      let errMsg = `API request failed: ${response.status}`;
+      try {
+        const errData = await response.json();
+        errMsg = errData?.message || errData?.error || errMsg;
+      } catch (_) {}
+      throw new Error(errMsg);
     }
 
     return response.json();
@@ -71,9 +80,21 @@ export const AdminApiProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // If plain object, convert to FormData so image can be included
+      let body;
+      if (categoryData instanceof FormData) {
+        body = categoryData;
+      } else {
+        const fd = new FormData();
+        Object.entries(categoryData).forEach(([key, val]) => {
+          if (val !== null && val !== undefined) fd.append(key, val);
+        });
+        body = fd;
+      }
+
       const data = await makeAuthenticatedRequest("/categories/", {
         method: "POST",
-        body: JSON.stringify(categoryData),
+        body,
       });
 
       // Refresh categories list
@@ -93,9 +114,21 @@ export const AdminApiProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // If plain object, convert to FormData so image can be included
+      let body;
+      if (categoryData instanceof FormData) {
+        body = categoryData;
+      } else {
+        const fd = new FormData();
+        Object.entries(categoryData).forEach(([key, val]) => {
+          if (val !== null && val !== undefined) fd.append(key, val);
+        });
+        body = fd;
+      }
+
       const data = await makeAuthenticatedRequest(`/categories/${id}`, {
         method: "PUT",
-        body: JSON.stringify(categoryData),
+        body,
       });
 
       // Refresh categories list

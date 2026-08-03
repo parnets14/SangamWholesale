@@ -38,6 +38,8 @@ const Product = () => {
   const [editingId, setEditingId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [fileList, setFileList] = useState([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
