@@ -249,15 +249,9 @@ const PrivacyPolicy = () => {
               className="flex items-center gap-2 text-white/90 hover:text-white text-sm transition-colors"
             >
               <Mail className="w-4 h-4 flex-shrink-0" />
-              support@sangamwholesale.com
+             sales@sagamwholesale@gmail.com  
             </a>
-            <a
-              href="tel:+919999999999"
-              className="flex items-center gap-2 text-white/90 hover:text-white text-sm transition-colors"
-            >
-              <Phone className="w-4 h-4 flex-shrink-0" />
-              +91 99999 99999
-            </a>
+            
           </div>
         </motion.div>
       </div>
