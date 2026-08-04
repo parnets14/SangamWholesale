@@ -1,45 +1,78 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "../context/AdminContext";
 
 const RETURN_STATUS_OPTIONS = [
-  "requested",
-  "pending",
-  "approved",
-  "rejected",
-  "picked_up",
-  "refunded",
+  { value: "processing",       label: "Processing",       badge: "status-badge-processing",   dot: "status-dot-processing",   cardBg: "bg-yellow-500"  },
+  { value: "in-transit",       label: "In Transit",       badge: "status-badge-in-transit",   dot: "status-dot-in-transit",   cardBg: "bg-blue-300"   },
+  { value: "out-for-delivery", label: "Out for Delivery", badge: "status-badge-out-delivery", dot: "status-dot-out-delivery", cardBg: "bg-orange-500"  },
+  { value: "delivered",        label: "Delivered",        badge: "status-badge-delivered",    dot: "status-dot-delivered",    cardBg: "bg-green-600"   },
+  { value: "rejected",         label: "Rejected",         badge: "status-badge-rejected",     dot: "status-dot-rejected",     cardBg: "bg-red-400"     },
 ];
 
-const STATUS_COLORS = {
-  requested: "bg-orange-100 text-orange-800 border-orange-300",
-  pending:   "bg-yellow-100 text-yellow-800 border-yellow-300",
-  approved:  "bg-blue-100 text-blue-800 border-blue-300",
-  rejected:  "bg-red-100 text-red-800 border-red-300",
-  picked_up: "bg-purple-100 text-purple-800 border-purple-300",
-  refunded:  "bg-green-100 text-green-800 border-green-300",
-};
+const getOption = (status) =>
+  RETURN_STATUS_OPTIONS.find((o) => o.value === status) || {
+    value: status,
+    label: status || "—",
+    badge: "status-badge-default",
+    dot:   "status-dot-default",
+  };
 
-// ── Inline status cell ─────────────────────────────────────────────────────
+// ── Status Cell ────────────────────────────────────────────────────────────
 const StatusCell = ({ order, token, onUpdated }) => {
-  const [open, setOpen]     = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [flash, setFlash]   = useState(null); // "ok" | "err"
-  const ref = useRef(null);
+  const [open, setOpen]               = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [localStatus, setLocalStatus] = useState(order.status);
+  const [dropPos, setDropPos]         = useState({ top: 0, left: 0 });
+  const prevStatusRef                 = useRef(order.status);
+  const btnRef                        = useRef(null);
 
-  // Close on outside click
+  // sync when parent updates
   useEffect(() => {
+    setLocalStatus(order.status);
+    prevStatusRef.current = order.status;
+  }, [order.status]);
+
+  // close dropdown on resize only — NOT on scroll, so user can click options
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  // close on outside click — ignore clicks inside the portal dropdown too
+  useEffect(() => {
+    if (!open) return;
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      // if click is on the badge button itself, let handleOpen toggle it
+      if (btnRef.current && btnRef.current.contains(e.target)) return;
+      // if click is inside the portal dropdown (data-dropdown attribute), ignore
+      if (e.target.closest && e.target.closest("[data-status-dropdown]")) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  const handleOpen = () => {
+    if (saving) return;
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((v) => !v);
+  };
 
   const handleSelect = async (newStatus) => {
-    if (newStatus === order.status) { setOpen(false); return; }
+    if (newStatus === localStatus || saving) { setOpen(false); return; }
     setOpen(false);
+    const previous = prevStatusRef.current;
+    prevStatusRef.current = newStatus;
+    setLocalStatus(newStatus); // optimistic update
     setSaving(true);
-    setFlash(null);
     try {
       const res = await fetch(`/api/return-orders/admin/${order._id}/status`, {
         method: "PUT",
@@ -51,95 +84,74 @@ const StatusCell = ({ order, token, onUpdated }) => {
       });
       const data = await res.json();
       if (data.success) {
-        onUpdated(order._id, newStatus);
-        setFlash("ok");
+        onUpdated(order._id, newStatus); // stats recount
       } else {
-        setFlash("err");
+        prevStatusRef.current = previous;
+        setLocalStatus(previous); // revert
       }
     } catch {
-      setFlash("err");
+      prevStatusRef.current = previous;
+      setLocalStatus(previous); // revert
     } finally {
       setSaving(false);
-      setTimeout(() => setFlash(null), 2500);
     }
   };
 
-  const colorClass =
-    STATUS_COLORS[order.status] || "bg-gray-100 text-gray-600 border-gray-300";
+  const current = getOption(localStatus);
 
   return (
-    <div ref={ref} className="relative inline-block">
-      {/* Flash feedback */}
-      {flash === "ok" && (
-        <span className="absolute -top-5 left-0 text-xs text-green-600 font-medium whitespace-nowrap">
-          ✓ Updated
-        </span>
-      )}
-      {flash === "err" && (
-        <span className="absolute -top-5 left-0 text-xs text-red-500 font-medium whitespace-nowrap">
-          ✗ Failed
-        </span>
-      )}
-
-      {/* Clickable badge */}
+    <div className="inline-block">
+      {/* Badge button */}
       <button
-        onClick={() => !saving && setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={handleOpen}
         title="Click to change status"
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border cursor-pointer select-none transition hover:opacity-80 ${colorClass}`}
+        className={`${current.badge} inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition hover:opacity-90 active:scale-95`}
       >
-        {saving ? (
+        {saving && (
           <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-        ) : (
-          <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
         )}
-        {order.status?.replace("_", " ")}
+        {current.label}
+        <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/>
+        </svg>
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute z-50 mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[150px]">
-          {RETURN_STATUS_OPTIONS.map((s) => {
-            const isActive = s === order.status;
-            const c = STATUS_COLORS[s] || "bg-gray-50 text-gray-700 border-gray-200";
+      {/* Portal dropdown — renders in document.body, no overflow clipping */}
+      {open && createPortal(
+        <div
+          data-status-dropdown
+          className="fixed z-[9999] bg-white rounded-xl py-1.5 min-w-[220px]"
+          style={{ top: dropPos.top, left: dropPos.left, boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}
+        >
+          <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Change Status
+          </p>
+          {RETURN_STATUS_OPTIONS.map((opt) => {
+            const isActive = opt.value === localStatus;
             return (
               <button
-                key={s}
-                onClick={() => handleSelect(s)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs capitalize hover:bg-gray-50 transition ${
-                  isActive ? "font-bold" : "font-normal"
-                }`}
+                key={opt.value}
+                onClick={() => handleSelect(opt.value)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 transition hover:bg-gray-50 ${isActive ? "bg-gray-50" : ""}`}
               >
-                <span
-                  className={`px-2 py-0.5 rounded-full border ${c} ${
-                    isActive ? "ring-1 ring-offset-1 ring-blue-400" : ""
-                  }`}
-                >
-                  {s.replace("_", " ")}
+                <span className={`${opt.dot} w-2.5 h-2.5 rounded-full shrink-0`} />
+                <span className={`${opt.badge} px-3 py-0.5 rounded-full text-xs font-semibold`}>
+                  {opt.label}
                 </span>
                 {isActive && (
-                  <svg
-                    className="ml-auto w-3.5 h-3.5 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg className="ml-auto w-3.5 h-3.5 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
                   </svg>
                 )}
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -163,10 +175,7 @@ const ReturnOrders = () => {
     setError(null);
     try {
       const res = await fetch("/api/return-orders/admin/all", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-store",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache", "Pragma": "no-cache" },
       });
       const data = await res.json();
       if (data.success) setReturnOrders(data.returnOrders);
@@ -178,7 +187,6 @@ const ReturnOrders = () => {
     }
   };
 
-  // Called from StatusCell after successful API update
   const handleUpdated = (orderId, newStatus) => {
     setReturnOrders((prev) =>
       prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
@@ -187,9 +195,7 @@ const ReturnOrders = () => {
 
   const getImageUrl = (image) => {
     if (!image) return null;
-    if (image.startsWith("http")) {
-      try { return new URL(image).pathname; } catch { return image; }
-    }
+    if (image.startsWith("http")) { try { return new URL(image).pathname; } catch { return image; } }
     if (!image.startsWith("/")) return `/products/${image}`;
     return image;
   };
@@ -200,8 +206,7 @@ const ReturnOrders = () => {
       search === "" ||
       order._id.toLowerCase().includes(search.toLowerCase()) ||
       name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      filterStatus === "all" || order.status === filterStatus;
+    const matchStatus = filterStatus === "all" || order.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
@@ -216,25 +221,21 @@ const ReturnOrders = () => {
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           Refresh
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        {RETURN_STATUS_OPTIONS.map((s) => (
-          <div key={s} className="bg-white rounded-lg shadow-sm border p-3 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+        {RETURN_STATUS_OPTIONS.map(({ value, label, badge, cardBg }) => (
+          <div key={value} className={`${cardBg} rounded-lg shadow-sm border p-3 text-center`}>
             <p className="text-2xl font-bold text-gray-800">
-              {returnOrders.filter((o) => o.status === s).length}
+              {returnOrders.filter((o) => o.status === value).length}
             </p>
-            <span
-              className={`text-xs font-medium capitalize mt-1 px-2 py-0.5 rounded-full inline-block border ${
-                STATUS_COLORS[s] || "bg-gray-100 text-gray-600"
-              }`}
-            >
-              {s.replace("_", " ")}
+            <span className={`${badge} text-xs font-semibold mt-1 px-2 py-0.5 rounded-full inline-block`}>
+              {label}
             </span>
           </div>
         ))}
@@ -255,10 +256,8 @@ const ReturnOrders = () => {
           className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Statuses</option>
-          {RETURN_STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-            </option>
+          {RETURN_STATUS_OPTIONS.map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
       </div>
@@ -267,8 +266,8 @@ const ReturnOrders = () => {
       {loading ? (
         <div className="text-center py-16 text-gray-500">
           <svg className="animate-spin w-8 h-8 mx-auto mb-3 text-blue-500" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
           Loading return orders...
         </div>
@@ -282,10 +281,7 @@ const ReturnOrders = () => {
             <thead className="bg-gray-50">
               <tr>
                 {["Return Order ID", "Customer", "Items", "Comment", "Status", "Created At"].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
-                  >
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     {h}
                   </th>
                 ))}
@@ -294,20 +290,15 @@ const ReturnOrders = () => {
             <tbody className="divide-y divide-gray-100">
               {filtered.map((order) => (
                 <tr key={order._id} className="hover:bg-gray-50 transition-colors">
-                  {/* Return Order ID */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="font-mono text-xs font-semibold text-blue-700">{order._id}</span>
                   </td>
-
-                  {/* Customer */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-800">
                       {order.user?.userDetails?.fullName || "—"}
                     </div>
                     <div className="text-xs text-gray-400">{order.user?.phone || ""}</div>
                   </td>
-
-                  {/* Items */}
                   <td className="px-4 py-3">
                     <ul className="space-y-1">
                       {order.items?.map((item) => (
@@ -320,14 +311,10 @@ const ReturnOrders = () => {
                               onError={(e) => (e.target.style.display = "none")}
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded border bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                              ?
-                            </div>
+                            <div className="w-8 h-8 rounded border bg-gray-100 flex items-center justify-center text-gray-400 text-xs">?</div>
                           )}
                           <span className="text-sm text-gray-700">{item.name}</span>
-                          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                            ×{item.quantity}
-                          </span>
+                          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">×{item.quantity}</span>
                           {item.reason && (
                             <span className="text-xs text-red-500 italic">{item.reason}</span>
                           )}
@@ -335,18 +322,12 @@ const ReturnOrders = () => {
                       ))}
                     </ul>
                   </td>
-
-                  {/* Comment */}
                   <td className="px-4 py-3 text-xs text-gray-600 max-w-[140px] whitespace-pre-wrap">
                     {order.comment || "—"}
                   </td>
-
-                  {/* Status — click badge to open inline dropdown */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <StatusCell order={order} token={token} onUpdated={handleUpdated} />
                   </td>
-
-                  {/* Created At */}
                   <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
                     {new Date(order.createdAt).toLocaleString()}
                   </td>

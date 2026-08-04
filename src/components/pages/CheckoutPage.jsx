@@ -32,7 +32,7 @@ const CheckoutPage = () => {
   const [success, setSuccess] = useState('');
 
   // Payment and notes
-  const [paymentMethod, setPaymentMethod] = useState('credit');
+  const [paymentMethod, setPaymentMethod] = useState('upi');
   const [orderNotes, setOrderNotes] = useState('');
   const [showCoupons, setShowCoupons] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -347,15 +347,6 @@ const CheckoutPage = () => {
               <span className="font-semibold text-lg">Payment Options</span>
             </div>
             <div className="flex gap-4">
-              <button
-                className={`flex-1 border rounded p-4 flex flex-col items-center ${paymentMethod === 'credit' ? 'border-red-600 bg-red-50' : 'border-gray-200'}`}
-                onClick={() => setPaymentMethod('credit')}
-              >
-                <span className="mb-1"><CreditCard className="inline text-blue-500" size={18} /></span>
-                <span className="font-semibold">Udaan Credit</span>
-                <span className="text-xs text-gray-500">Pay in 7 days • No interest</span>
-                {paymentMethod === 'credit' && <Check className="text-[#702834] mt-2" size={16} />}
-              </button>
                         <button 
                 className={`flex-1 border rounded p-4 flex flex-col items-center ${paymentMethod === 'upi' ? 'border-red-600 bg-red-50' : 'border-gray-200'}`}
                 onClick={() => setPaymentMethod('upi')}

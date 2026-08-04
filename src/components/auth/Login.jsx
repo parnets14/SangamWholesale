@@ -1,13 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Phone, ArrowRight, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  // Agar already logged in hai toh Home bhejo
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/Home", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const containerVariants = {
     hidden: { opacity: 0, scale: 0.9 },

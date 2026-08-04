@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Briefcase, FileText, ArrowRight, Loader2 } from "lucide-react";
@@ -14,13 +14,25 @@ const BusinessDetails = () => {
   const token = location.state?.token || "";
   const user = location.state?.user || null;
 
-  const [businessName, setBusinessName] = useState(user?.businessName || "");
-  const [gst, setGst] = useState(user?.gst || "");
+  // Backend stores business name inside user.businessDetails.businessName
+  const [businessName, setBusinessName] = useState(
+    user?.businessDetails?.businessName || ""
+  );
+  const [gst, setGst] = useState(user?.businessDetails?.gstNumber || "");
   const [loading, setLoading] = useState(false);
 
+  // Guard: if no token/mobile, send back to login
+  useEffect(() => {
+    if (!token || !mobile) {
+      toast.error("Session expired. Please login again.");
+      navigate("/login", { replace: true });
+    }
+  }, [token, mobile, navigate]);
+
   const validateGST = (value) => {
-    if (!value) return true; // GST is optional
-    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    if (!value) return true; // GST optional
+    const gstRegex =
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return gstRegex.test(value.toUpperCase());
   };
 
@@ -36,47 +48,51 @@ const BusinessDetails = () => {
 
     setLoading(true);
 
-    const updatedUser = {
-      ...user,
-      businessName: businessName.trim(),
-      gst: gst.trim().toUpperCase() || null,
-    };
-
     try {
-      const response = await fetch("/api/user/update-business", {
-        method: "PUT",
+      // Backend route: POST /api/business/create
+      const response = await fetch("/api/business/create", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           businessName: businessName.trim(),
-          gst: gst.trim().toUpperCase() || undefined,
+          gstNumber: gst.trim().toUpperCase() || undefined,
         }),
       });
 
       const data = await response.json();
 
-      const finalUser = response.ok ? (data.user || updatedUser) : updatedUser;
+      // Build final user matching backend response structure
+      const finalUser = {
+        ...user,
+        businessDetails: {
+          businessName: businessName.trim(),
+          gstNumber: gst.trim().toUpperCase() || null,
+          ...(response.ok ? data.business : {}),
+        },
+      };
 
-      // Store auth and go to Home
+      // Save to auth context + localStorage
       login(finalUser, token);
       toast.success("Welcome to Sangam Wholesale!");
       navigate("/Home", { replace: true });
     } catch (error) {
-      console.error("Error updating business:", error);
-      // Still proceed even on network error
-      login(updatedUser, token);
+      console.error("Error creating business:", error);
+      // Still login even on network error
+      const fallbackUser = {
+        ...user,
+        businessDetails: {
+          businessName: businessName.trim(),
+          gstNumber: gst.trim().toUpperCase() || null,
+        },
+      };
+      login(fallbackUser, token);
       toast.success("Welcome to Sangam Wholesale!");
       navigate("/Home", { replace: true });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !loading) {
-      handleContinue();
     }
   };
 
@@ -88,7 +104,7 @@ const BusinessDetails = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm bg-white rounded-xl shadow-xl p-6"
       >
-        {/* Progress indicator */}
+        {/* Progress */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
@@ -96,10 +112,7 @@ const BusinessDetails = () => {
           >
             ✓
           </div>
-          <div
-            className="w-12 h-1 rounded"
-            style={{ backgroundColor: "#702834" }}
-          ></div>
+          <div className="w-12 h-1 rounded" style={{ backgroundColor: "#702834" }} />
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
             style={{ backgroundColor: "#702834" }}
@@ -108,7 +121,6 @@ const BusinessDetails = () => {
           </div>
         </div>
 
-        {/* Header */}
         <div className="text-center mb-6">
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
@@ -119,9 +131,7 @@ const BusinessDetails = () => {
           <h2 className="text-xl font-bold" style={{ color: "#702834" }}>
             Business Details
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Tell us about your business
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Tell us about your business</p>
         </div>
 
         {/* Business Name */}
@@ -137,7 +147,7 @@ const BusinessDetails = () => {
               type="text"
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => { if (e.key === "Enter" && !loading) handleContinue(); }}
               disabled={loading}
               placeholder="Enter your business name"
               className="w-full pl-10 pr-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 text-sm transition-all duration-200"
@@ -146,7 +156,7 @@ const BusinessDetails = () => {
           </div>
         </div>
 
-        {/* GST Number (Optional) */}
+        {/* GST (Optional) */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             GST Number{" "}
@@ -160,7 +170,7 @@ const BusinessDetails = () => {
               type="text"
               value={gst}
               onChange={(e) => setGst(e.target.value.toUpperCase())}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => { if (e.key === "Enter" && !loading) handleContinue(); }}
               disabled={loading}
               maxLength={15}
               placeholder="e.g. 22AAAAA0000A1Z5"
@@ -173,7 +183,6 @@ const BusinessDetails = () => {
           </p>
         </div>
 
-        {/* Continue Button */}
         <motion.button
           whileHover={!loading ? { scale: 1.02 } : {}}
           whileTap={!loading ? { scale: 0.98 } : {}}
@@ -189,7 +198,7 @@ const BusinessDetails = () => {
             </>
           ) : (
             <>
-              <span>Continue</span>
+              <span>Complete Registration</span>
               <ArrowRight size={18} />
             </>
           )}

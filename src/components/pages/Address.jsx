@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { MapPin, ArrowLeft, Check, Loader2, Search, Navigation } from "lucide-react";
 
 const steps = ["Location", "Address", "Timings", "GST"];
 const timeOptions = [
@@ -72,7 +72,242 @@ const Address = () => {
   const [gstVerified, setGstVerified] = useState(false);
   const [gstVerifying, setGstVerifying] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
+  const autocompleteServiceRef = useRef(null);
+  const geocoderRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const [autoFilledFields, setAutoFilledFields] = useState([]);
+
+  // Load Google Maps JS API
+  useEffect(() => {
+    const scriptId = "google-maps-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setMapLoaded(true);
+      document.head.appendChild(script);
+    } else if (window.google && window.google.maps) {
+      setMapLoaded(true);
+    } else {
+      const existing = document.getElementById(scriptId);
+      existing.addEventListener("load", () => setMapLoaded(true));
+    }
+  }, []);
+
+  // Extract address components from Google geocode result
+  const extractAddressComponents = (results) => {
+    const components = results[0]?.address_components || [];
+    let pincode = "";
+    let city = "";
+    let areaName = "";
+
+    for (const comp of components) {
+      if (comp.types.includes("postal_code")) {
+        pincode = comp.long_name;
+      }
+      if (
+        comp.types.includes("locality") ||
+        comp.types.includes("administrative_area_level_3")
+      ) {
+        city = comp.long_name;
+      }
+      if (
+        comp.types.includes("sublocality_level_1") ||
+        comp.types.includes("sublocality") ||
+        comp.types.includes("neighborhood")
+      ) {
+        areaName = comp.long_name;
+      }
+    }
+
+    // fallback city
+    if (!city) {
+      const cityComp = components.find((c) =>
+        c.types.includes("administrative_area_level_2")
+      );
+      if (cityComp) city = cityComp.long_name;
+    }
+
+    return { pincode, city, areaName };
+  };
+
+  // Reverse geocode lat/lng to fill address fields
+  const reverseGeocode = useCallback(
+    (lat, lng) => {
+      if (!geocoderRef.current && window.google) {
+        geocoderRef.current = new window.google.maps.Geocoder();
+      }
+      if (!geocoderRef.current) return;
+      geocoderRef.current.geocode(
+        { location: { lat: parseFloat(lat), lng: parseFloat(lng) } },
+        (results, status) => {
+          if (status === "OK" && results[0]) {
+            const { pincode, city, areaName } = extractAddressComponents(results);
+            const filled = [];
+            setFormData((f) => {
+              const updates = {};
+              if (pincode) { updates.pincode = pincode; filled.push("pincode"); }
+              if (city) { updates.city = city; filled.push("city"); }
+              if (areaName) { updates.areaName = areaName; filled.push("areaName"); }
+              return { ...f, ...updates };
+            });
+            setAutoFilledFields(filled);
+          }
+        }
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // Initialize map when loaded and on step 0
+  const initMap = useCallback(() => {
+    if (!mapRef.current || !window.google) return;
+    // Don't re-init if already initialized
+    if (mapInstanceRef.current) return;
+    const lat = parseFloat(formData.latitude) || DEFAULT_LOCATION.latitude;
+    const lng = parseFloat(formData.longitude) || DEFAULT_LOCATION.longitude;
+    const mapOptions = {
+      center: { lat, lng },
+      zoom: 16,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+    };
+    const map = new window.google.maps.Map(mapRef.current, mapOptions);
+    mapInstanceRef.current = map;
+
+    const marker = new window.google.maps.Marker({
+      position: { lat, lng },
+      map,
+      draggable: true,
+      title: "Drag to adjust location",
+      animation: window.google.maps.Animation.DROP,
+    });
+    markerRef.current = marker;
+
+    // Update coords on drag
+    marker.addListener("dragend", (e) => {
+      const newLat = e.latLng.lat().toFixed(6);
+      const newLng = e.latLng.lng().toFixed(6);
+      setFormData((f) => ({ ...f, latitude: newLat, longitude: newLng }));
+      reverseGeocode(newLat, newLng);
+    });
+
+    // Also allow clicking map to move marker
+    map.addListener("click", (e) => {
+      const newLat = e.latLng.lat().toFixed(6);
+      const newLng = e.latLng.lng().toFixed(6);
+      marker.setPosition(e.latLng);
+      setFormData((f) => ({ ...f, latitude: newLat, longitude: newLng }));
+      reverseGeocode(newLat, newLng);
+    });
+
+    autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+    geocoderRef.current = new window.google.maps.Geocoder();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapLoaded, reverseGeocode]);
+
+  useEffect(() => {
+    if (mapLoaded && currentStep === 0) {
+      // Reset map instance when returning to step 0
+      mapInstanceRef.current = null;
+      setTimeout(initMap, 150);
+    }
+  }, [mapLoaded, currentStep, initMap]);
+
+  // When coords change externally (geolocation), pan map
+  useEffect(() => {
+    if (mapInstanceRef.current && markerRef.current && formData.latitude && formData.longitude) {
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const pos = { lat, lng };
+        mapInstanceRef.current.panTo(pos);
+        markerRef.current.setPosition(pos);
+      }
+    }
+  }, [formData.latitude, formData.longitude]);
+
+  // Search autocomplete
+  const handleSearchInput = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (!val.trim() || !autocompleteServiceRef.current) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    autocompleteServiceRef.current.getPlacePredictions(
+      { input: val, componentRestrictions: { country: "in" } },
+      (predictions, status) => {
+        setSearchLoading(false);
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSearchResults(predictions);
+        } else {
+          setSearchResults([]);
+        }
+      }
+    );
+  };
+
+  const handleSelectPlace = (placeId, description) => {
+    setSearchQuery(description);
+    setSearchResults([]);
+    if (!geocoderRef.current) return;
+    geocoderRef.current.geocode({ placeId }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const loc = results[0].geometry.location;
+        const newLat = loc.lat().toFixed(6);
+        const newLng = loc.lng().toFixed(6);
+        const { pincode, city, areaName } = extractAddressComponents(results);
+        const filled = [];
+        setFormData((f) => {
+          const updates = { latitude: newLat, longitude: newLng };
+          if (pincode) { updates.pincode = pincode; filled.push("pincode"); }
+          if (city) { updates.city = city; filled.push("city"); }
+          if (areaName) { updates.areaName = areaName; filled.push("areaName"); }
+          return { ...f, ...updates };
+        });
+        setAutoFilledFields(filled);
+      }
+    });
+  };
+
+  // Use current location
+  const handleUseCurrentLocation = () => {
+    setLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocating(false);
+          const newLat = pos.coords.latitude.toFixed(6);
+          const newLng = pos.coords.longitude.toFixed(6);
+          setFormData((f) => ({
+            ...f,
+            latitude: newLat,
+            longitude: newLng,
+          }));
+          reverseGeocode(newLat, newLng);
+        },
+        () => {
+          setLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setLocating(false);
+    }
+  };
 
   // Auto-detect location on mount (if not editing)
   useEffect(() => {
@@ -175,7 +410,13 @@ const Address = () => {
 
   // Step navigation
   const handleNext = () => {
-    if (validateStep()) setCurrentStep(currentStep + 1);
+    if (validateStep()) {
+      // When moving from Location step to Address step, reverse geocode the selected coords
+      if (currentStep === 0 && formData.latitude && formData.longitude) {
+        reverseGeocode(formData.latitude, formData.longitude);
+      }
+      setCurrentStep(currentStep + 1);
+    }
   };
   const handleBack = () => {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
@@ -258,60 +499,79 @@ const Address = () => {
     }
   };
 
-  // Google Maps iframe URL
-  const mapLat = formData.latitude || DEFAULT_LOCATION.latitude;
-  const mapLng = formData.longitude || DEFAULT_LOCATION.longitude;
-  const mapUrl = `https://www.google.com/maps/embed/v1/view?key=${GOOGLE_MAPS_API_KEY}&center=${mapLat},${mapLng}&zoom=16&maptype=roadmap&markers=color:red%7C${mapLat},${mapLng}`;
-
   // Step content
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return (
           <div className="space-y-4">
-            <label className="block font-semibold">
-              Location (auto-detected or enter manually)
-            </label>
-            <div className="w-full h-64 rounded overflow-hidden border">
-              <iframe
-                title="Google Map"
-                src={mapUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                ref={mapRef}
-              ></iframe>
+            <h3 className="font-semibold text-gray-800 text-base">
+              Search your shop location
+            </h3>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <div className="flex items-center border rounded-lg px-3 py-2 bg-white shadow-sm focus-within:ring-2 focus-within:ring-[#702834]">
+                <Search size={16} className="text-gray-400 mr-2 flex-shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="flex-1 outline-none text-sm bg-transparent"
+                  placeholder="Search area, street, landmark..."
+                  value={searchQuery}
+                  onChange={handleSearchInput}
+                  autoComplete="off"
+                />
+                {searchLoading && (
+                  <Loader2 size={16} className="animate-spin text-gray-400 ml-2" />
+                )}
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {searchResults.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-56 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <button
+                      key={result.place_id}
+                      type="button"
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm border-b last:border-b-0 flex items-start gap-2"
+                      onClick={() => handleSelectPlace(result.place_id, result.description)}
+                    >
+                      <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 leading-snug">{result.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                className={`border rounded px-3 py-2 flex-1 ${
-                  errors.location ? "border-red-500" : ""
-                }`}
-                placeholder="Latitude"
-                value={formData.latitude}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, latitude: e.target.value }))
-                }
-              />
-              <input
-                type="text"
-                className={`border rounded px-3 py-2 flex-1 ${
-                  errors.location ? "border-red-500" : ""
-                }`}
-                placeholder="Longitude"
-                value={formData.longitude}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, longitude: e.target.value }))
-                }
-              />
-            </div>
-            <div className="text-xs text-gray-500">
-              You can drag the marker on Google Maps (in a separate tab) to get
-              coordinates, or use your current location.
-            </div>
+
+            {/* Use Current Location */}
+            <button
+              type="button"
+              className="flex items-center gap-2 text-[#702834] font-medium text-sm hover:underline"
+              onClick={handleUseCurrentLocation}
+              disabled={locating}
+            >
+              {locating ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Navigation size={16} />
+              )}
+              {locating ? "Detecting location..." : "Use my current location"}
+            </button>
+
+            {/* Coordinates Display */}
+            {formData.latitude && formData.longitude && (
+              <div className="flex items-center gap-1 text-sm text-gray-500">
+                <MapPin size={13} className="text-[#702834]" />
+                <span>
+                  {parseFloat(formData.latitude).toFixed(4)},{" "}
+                  {parseFloat(formData.longitude).toFixed(4)} —{" "}
+                  <span className="text-gray-400">you can also drag the pin to adjust</span>
+                </span>
+              </div>
+            )}
+
             {errors.location && (
               <div className="text-red-500 text-sm">{errors.location}</div>
             )}
@@ -426,9 +686,7 @@ const Address = () => {
                 placeholder="Home, Office, Other"
               />
               {errors.saveAddressAs && (
-                <div className="text-red-500 text-sm">
-                  {errors.saveAddressAs}
-                </div>
+                <div className="text-red-500 text-sm">{errors.saveAddressAs}</div>
               )}
             </div>
           </div>
@@ -644,6 +902,29 @@ const Address = () => {
         {/* Step Content */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           {renderStep()}
+          {/* Map — kept always in DOM so Google Maps doesn't re-inject into wrong step */}
+          <div
+            ref={mapRef}
+            style={{ height: currentStep === 0 ? "260px" : "0px", overflow: "hidden", marginTop: currentStep === 0 ? "12px" : "0" }}
+            className={`w-full rounded-lg border shadow-sm transition-all ${currentStep === 0 ? "block" : "hidden"}`}
+          >
+            {!mapLoaded && currentStep === 0 && (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100" style={{ height: "260px" }}>
+                <Loader2 className="animate-spin text-gray-400" size={28} />
+              </div>
+            )}
+          </div>
+          {/* Coordinates — shown only on step 0 */}
+          {currentStep === 0 && formData.latitude && formData.longitude && (
+            <div className="flex items-center gap-1 text-sm text-gray-500 mt-3">
+              <MapPin size={13} className="text-[#702834]" />
+              <span>
+                {parseFloat(formData.latitude).toFixed(4)},{" "}
+                {parseFloat(formData.longitude).toFixed(4)} —{" "}
+                <span className="text-gray-400">you can also drag the pin to adjust</span>
+              </span>
+            </div>
+          )}
         </div>
         {errors.api && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4">

@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+/* ── Order / Return Order Status Badge Colors ───────────────────────── */
+.status-badge-confirmed    { background-color: #3b82f6; color: #ffffff; }
+.status-badge-processing   { background-color: #a855f7; color: #ffffff; }
+.status-badge-in-transit   { background-color: #6366f1; color: #ffffff; }
+.status-badge-out-delivery { background-color: #f97316; color: #ffffff; }
+.status-badge-delivered    { background-color: #22c55e; color: #ffffff; }
+.status-badge-rejected     { background-color: #ef4444; color: #ffffff; }
+.status-badge-requested    { background-color: #f59e0b; color: #ffffff; }
+.status-badge-refunded     { background-color: #14b8a6; color: #ffffff; }
+.status-badge-default      { background-color: #9ca3af; color: #ffffff; }
+
+/* ── Dot colors ──────────────────────────────────────────────────────── */
+.status-dot-confirmed    { background-color: #3b82f6; }
+.status-dot-processing   { background-color: #a855f7; }
+.status-dot-in-transit   { background-color: #6366f1; }
+.status-dot-out-delivery { background-color: #f97316; }
+.status-dot-delivered    { background-color: #22c55e; }
+.status-dot-rejected     { background-color: #ef4444; }
+.status-dot-requested    { background-color: #f59e0b; }
+.status-dot-refunded     { background-color: #14b8a6; }
+.status-dot-default      { background-color: #9ca3af; }

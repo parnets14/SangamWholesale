@@ -1,30 +1,37 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "../context/AdminContext";
 
 const ORDER_STATUS_OPTIONS = [
-  { value: "pending",    label: "Pending",    color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  { value: "approved",   label: "Approved",   color: "bg-blue-100 text-blue-800 border-blue-300" },
-  { value: "in-transit", label: "In Transit", color: "bg-indigo-100 text-indigo-800 border-indigo-300" },
-  { value: "rejected",   label: "Rejected",   color: "bg-red-100 text-red-800 border-red-300" },
-  { value: "delivered",  label: "Delivered",  color: "bg-green-100 text-green-800 border-green-300" },
+ 
+  { value: "processing",       label: "Processing",       badge: "status-badge-processing",   dot: "status-dot-processing",   cardBg: "bg-yellow-500"  },
+  { value: "in-transit",       label: "In Transit",       badge: "status-badge-in-transit",   dot: "status-dot-in-transit",   cardBg: "bg-blue-300"    },
+  { value: "out-for-delivery", label: "Out for Delivery", badge: "status-badge-out-delivery",  dot: "status-dot-out-delivery", cardBg: "bg-orange-300"  },
+  { value: "delivered",        label: "Delivered",        badge: "status-badge-delivered",    dot: "status-dot-delivered",    cardBg: "bg-green-600"   },
+  { value: "rejected",         label: "Rejected",         badge: "status-badge-rejected",     dot: "status-dot-rejected",     cardBg: "bg-red-600"     },
 ];
 
-const getStatusStyle = (status) => {
-  const found = ORDER_STATUS_OPTIONS.find((o) => o.value === status);
-  return found ? found.color : "bg-gray-100 text-gray-600 border-gray-300";
-};
-
-const getStatusLabel = (status) => {
-  const found = ORDER_STATUS_OPTIONS.find((o) => o.value === status);
-  return found ? found.label : status;
-};
+const getOption = (status) =>
+  ORDER_STATUS_OPTIONS.find((o) => o.value === status) || {
+    value: status,
+    label: status || "—",
+    badge: "status-badge-default",
+    dot: "status-dot-default",
+  };
 
 // ── Inline status cell ────────────────────────────────────────────────────────
 const StatusCell = ({ order, token, onUpdated }) => {
-  const [open, setOpen]     = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [flash, setFlash]   = useState(null); // "ok" | "err"
-  const ref = useRef(null);
+  const [open, setOpen]               = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [localStatus, setLocalStatus] = useState(order.status);
+  const prevStatusRef                 = useRef(order.status);
+  const ref                           = useRef(null);
+
+  // keep in sync if parent re-renders with new status
+  useEffect(() => {
+    setLocalStatus(order.status);
+    prevStatusRef.current = order.status;
+  }, [order.status]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -35,10 +42,12 @@ const StatusCell = ({ order, token, onUpdated }) => {
   }, []);
 
   const handleSelect = async (newStatus) => {
-    if (newStatus === order.status) { setOpen(false); return; }
+    if (newStatus === localStatus || saving) { setOpen(false); return; }
     setOpen(false);
+    const previous = prevStatusRef.current;
+    prevStatusRef.current = newStatus;
+    setLocalStatus(newStatus);   // optimistic — badge updates instantly
     setSaving(true);
-    setFlash(null);
     try {
       const res = await fetch(`/api/orders/admin/${order._id}/status`, {
         method: "PUT",
@@ -50,68 +59,63 @@ const StatusCell = ({ order, token, onUpdated }) => {
       });
       const data = await res.json();
       if (data.success) {
-        onUpdated(order._id, newStatus);
-        setFlash("ok");
+        onUpdated(order._id, newStatus); // updates parent array → stats recount
       } else {
-        setFlash("err");
+        prevStatusRef.current = previous;
+        setLocalStatus(previous); // revert
       }
     } catch {
-      setFlash("err");
+      prevStatusRef.current = previous;
+      setLocalStatus(previous); // revert
     } finally {
       setSaving(false);
-      setTimeout(() => setFlash(null), 2500);
     }
   };
 
+  const current = getOption(localStatus);
+
   return (
     <div ref={ref} className="relative inline-block">
-      {/* Flash */}
-      {flash === "ok" && (
-        <span className="absolute -top-5 left-0 text-xs text-green-600 font-medium whitespace-nowrap">✓ Updated</span>
-      )}
-      {flash === "err" && (
-        <span className="absolute -top-5 left-0 text-xs text-red-500 font-medium whitespace-nowrap">✗ Failed</span>
-      )}
-
       {/* Badge button */}
       <button
         onClick={() => !saving && setOpen((v) => !v)}
         title="Click to change status"
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer select-none transition hover:opacity-80 ${getStatusStyle(order.status)}`}
+        className={`${current.badge} inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition hover:opacity-90 active:scale-95`}
       >
-        {saving ? (
+        {saving && (
           <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-        ) : (
-          <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+            <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
         )}
-        {getStatusLabel(order.status)}
+        {current.label}
+        <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/>
+        </svg>
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[160px]">
-          <p className="px-3 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="absolute z-50 mt-1.5 left-0 bg-white rounded-xl py-1.5 min-w-[210px]"
+          style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.15)" }}>
+          <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
             Change Status
           </p>
-          {ORDER_STATUS_OPTIONS.map(({ value, label, color }) => {
-            const isActive = value === order.status;
+          {ORDER_STATUS_OPTIONS.map((opt) => {
+            const isActive = opt.value === localStatus;
             return (
               <button
-                key={value}
-                onClick={() => handleSelect(value)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 transition ${isActive ? "font-bold" : "font-normal"}`}
+                key={opt.value}
+                onClick={() => handleSelect(opt.value)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 transition hover:bg-gray-50 ${isActive ? "bg-gray-50" : ""}`}
               >
-                <span className={`px-2 py-0.5 rounded-full border text-xs ${color} ${isActive ? "ring-1 ring-offset-1 ring-blue-400" : ""}`}>
-                  {label}
+                <span className={`${opt.dot} w-2.5 h-2.5 rounded-full shrink-0`} />
+                <span className={`${opt.badge} px-3 py-0.5 rounded-full text-xs font-semibold`}>
+                  {opt.label}
                 </span>
                 {isActive && (
-                  <svg className="ml-auto w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                  <svg className="ml-auto w-3.5 h-3.5 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
                   </svg>
                 )}
               </button>
@@ -193,13 +197,13 @@ const Orders = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        {ORDER_STATUS_OPTIONS.map(({ value, label, color }) => (
-          <div key={value} className="bg-white rounded-lg shadow-sm border p-3 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-6">
+        {ORDER_STATUS_OPTIONS.map(({ value, label, badge, cardBg }) => (
+          <div key={value} className={`${cardBg} rounded-lg shadow-sm border p-3 text-center`}>
             <p className="text-2xl font-bold text-gray-800">
               {orders.filter((o) => o.status === value).length}
             </p>
-            <span className={`text-xs font-medium mt-1 px-2 py-0.5 rounded-full inline-block border ${color}`}>
+            <span className={`${badge} text-xs font-semibold mt-1 px-2 py-0.5 rounded-full inline-block`}>
               {label}
             </span>
           </div>

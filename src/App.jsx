@@ -67,7 +67,7 @@ import ReturnOrders from "./components/admin/ReturnOrders";
 import Orders from "./components/admin/Orders";
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [currentCategory, setCurrentCategory] = useState(null);
   const [currentSubcategory, setCurrentSubcategory] = useState(null);
 
@@ -75,6 +75,15 @@ function AppContent() {
 
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+
+  // Auth restore hone tak blank screen dikhao (flash prevent karta hai)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-t-transparent" style={{ borderColor: '#702834', borderTopColor: 'transparent' }}></div>
+      </div>
+    );
+  }
   const addToCart = (product) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
