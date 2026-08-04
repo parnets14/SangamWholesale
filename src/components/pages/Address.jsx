@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { MapPin, ArrowLeft, Check, Loader2, Search } from "lucide-react";
 
 const steps = ["Location", "Address", "Timings", "GST"];
 const timeOptions = [
@@ -72,9 +72,145 @@ const Address = () => {
   const [gstVerified, setGstVerified] = useState(false);
   const [gstVerifying, setGstVerifying] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const mapRef = useRef(null);
+  const searchDebounceRef = useRef(null);
+  const autocompleteServiceRef = useRef(null);
+  const placesServiceRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
-  // Auto-detect location on mount (if not editing)
+  // Load Google Maps JS API with Places library
+  useEffect(() => {
+    if (window.google && window.google.maps) {
+      setMapLoaded(true);
+      return;
+    }
+    const existingScript = document.getElementById("google-maps-script");
+    if (existingScript) return;
+
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setMapLoaded(true);
+    document.head.appendChild(script);
+  }, []);
+
+  // Initialize map once loaded and lat/lng available
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    const lat = parseFloat(formData.latitude) || DEFAULT_LOCATION.latitude;
+    const lng = parseFloat(formData.longitude) || DEFAULT_LOCATION.longitude;
+    const center = { lat, lng };
+
+    if (!mapInstanceRef.current) {
+      const map = new window.google.maps.Map(mapRef.current, {
+        center,
+        zoom: 16,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+      const marker = new window.google.maps.Marker({
+        position: center,
+        map,
+        draggable: true,
+        title: "Drag to set location",
+      });
+
+      // Update coords when marker is dragged
+      marker.addListener("dragend", (e) => {
+        const newLat = e.latLng.lat().toFixed(6);
+        const newLng = e.latLng.lng().toFixed(6);
+        setFormData((f) => ({ ...f, latitude: newLat, longitude: newLng }));
+        reverseGeocode(e.latLng.lat(), e.latLng.lng());
+      });
+
+      mapInstanceRef.current = { map, marker };
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+      placesServiceRef.current = new window.google.maps.places.PlacesService(map);
+    } else {
+      // Update existing marker position
+      const pos = new window.google.maps.LatLng(lat, lng);
+      mapInstanceRef.current.marker.setPosition(pos);
+      mapInstanceRef.current.map.panTo(pos);
+    }
+  // eslint-disable-next-line
+  }, [mapLoaded, formData.latitude, formData.longitude]);
+
+  // Reverse geocode to fill search box label
+  const reverseGeocode = useCallback((lat, lng) => {
+    if (!window.google) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        setLocationSearch(results[0].formatted_address);
+      }
+    });
+  }, []);
+
+  // Search suggestions via Places Autocomplete
+  const handleLocationSearchChange = (e) => {
+    const value = e.target.value;
+    setLocationSearch(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (!value.trim()) { setSuggestions([]); return; }
+    searchDebounceRef.current = setTimeout(() => {
+      if (!autocompleteServiceRef.current) return;
+      setIsFetchingSuggestions(true);
+      autocompleteServiceRef.current.getPlacePredictions(
+        { input: value },
+        (predictions, status) => {
+          setIsFetchingSuggestions(false);
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions);
+          } else {
+            setSuggestions([]);
+          }
+        }
+      );
+    }, 350);
+  };
+
+  // When user selects a suggestion — fetch place details and set lat/lng
+  const handleSelectSuggestion = (placeId, description) => {
+    setLocationSearch(description);
+    setSuggestions([]);
+    if (!placesServiceRef.current) return;
+    placesServiceRef.current.getDetails(
+      { placeId, fields: ["geometry", "formatted_address"] },
+      (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+          const lat = place.geometry.location.lat().toFixed(6);
+          const lng = place.geometry.location.lng().toFixed(6);
+          setFormData((f) => ({ ...f, latitude: lat, longitude: lng }));
+        }
+      }
+    );
+  };
+
+  // Detect current location button
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) return;
+    setIsDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+        setFormData((f) => ({ ...f, latitude: lat, longitude: lng }));
+        reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+        setIsDetectingLocation(false);
+      },
+      () => setIsDetectingLocation(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+
   useEffect(() => {
     if (isEdit && editAddress) {
       setFormData({
@@ -258,60 +394,85 @@ const Address = () => {
     }
   };
 
-  // Google Maps iframe URL
-  const mapLat = formData.latitude || DEFAULT_LOCATION.latitude;
-  const mapLng = formData.longitude || DEFAULT_LOCATION.longitude;
-  const mapUrl = `https://www.google.com/maps/embed/v1/view?key=${GOOGLE_MAPS_API_KEY}&center=${mapLat},${mapLng}&zoom=16&maptype=roadmap&markers=color:red%7C${mapLat},${mapLng}`;
-
   // Step content
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-4">
-            <label className="block font-semibold">
-              Location (auto-detected or enter manually)
+          <div className="space-y-3">
+            <label className="block font-semibold text-gray-700">
+              Search your shop location
             </label>
-            <div className="w-full h-64 rounded overflow-hidden border">
-              <iframe
-                title="Google Map"
-                src={mapUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                ref={mapRef}
-              ></iframe>
+
+            {/* Search box */}
+            <div className="relative">
+              <div className="flex items-center border rounded-lg px-3 py-2 gap-2 bg-white shadow-sm">
+                <Search size={18} className="text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  className="flex-1 outline-none text-sm"
+                  placeholder="Search area, street, landmark..."
+                  value={locationSearch}
+                  onChange={handleLocationSearchChange}
+                  autoComplete="off"
+                />
+                {isFetchingSuggestions && (
+                  <Loader2 size={16} className="animate-spin text-gray-400 shrink-0" />
+                )}
+              </div>
+
+              {/* Suggestions dropdown */}
+              {suggestions.length > 0 && (
+                <ul className="absolute z-50 left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-56 overflow-y-auto">
+                  {suggestions.map((s) => (
+                    <li
+                      key={s.place_id}
+                      className="flex items-start gap-2 px-4 py-3 cursor-pointer hover:bg-gray-50 text-sm border-b last:border-0"
+                      onClick={() => handleSelectSuggestion(s.place_id, s.description)}
+                    >
+                      <MapPin size={15} className="text-red-500 mt-0.5 shrink-0" />
+                      <span>{s.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                className={`border rounded px-3 py-2 flex-1 ${
-                  errors.location ? "border-red-500" : ""
-                }`}
-                placeholder="Latitude"
-                value={formData.latitude}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, latitude: e.target.value }))
-                }
-              />
-              <input
-                type="text"
-                className={`border rounded px-3 py-2 flex-1 ${
-                  errors.location ? "border-red-500" : ""
-                }`}
-                placeholder="Longitude"
-                value={formData.longitude}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, longitude: e.target.value }))
-                }
-              />
-            </div>
-            <div className="text-xs text-gray-500">
-              You can drag the marker on Google Maps (in a separate tab) to get
-              coordinates, or use your current location.
-            </div>
+
+            {/* Detect current location */}
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={isDetectingLocation}
+              className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-60"
+            >
+              {isDetectingLocation ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <MapPin size={16} />
+              )}
+              {isDetectingLocation ? "Detecting..." : "Use my current location"}
+            </button>
+
+            {/* Interactive map */}
+            <div
+              ref={mapRef}
+              className="w-full h-64 rounded-lg overflow-hidden border shadow-sm"
+              style={{ minHeight: 256 }}
+            />
+
+            {!mapLoaded && (
+              <div className="text-xs text-gray-400 flex items-center gap-1">
+                <Loader2 size={12} className="animate-spin" /> Loading map...
+              </div>
+            )}
+
+            {/* Coord display */}
+            {formData.latitude && formData.longitude && (
+              <div className="text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                📍 {formData.latitude}, {formData.longitude} — you can also drag the pin to adjust
+              </div>
+            )}
+
             {errors.location && (
               <div className="text-red-500 text-sm">{errors.location}</div>
             )}

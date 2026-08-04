@@ -53,7 +53,7 @@ export default function DownloadPage() {
     } else {
       const isPlay = store === "Google Play";
       toast(
-        `${store} app coming soon!\nHum jaldi launch kar rahe hain.`,
+        `${store} app coming soon!`,
         {
           icon: isPlay
             ? <FaGooglePlay style={{ color: "#702834", fontSize: "18px" }} />
