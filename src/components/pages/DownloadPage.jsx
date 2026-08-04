@@ -52,18 +52,34 @@ export default function DownloadPage() {
       window.open(url, "_blank", "noopener,noreferrer");
     } else {
       const isPlay = store === "Google Play";
-      toast(
-        `${store} app coming soon!\nHum jaldi launch kar rahe hain.`,
-        {
-          icon: isPlay
-            ? <FaGooglePlay style={{ color: "#702834", fontSize: "18px" }} />
-            : <FaApple style={{ color: "#000", fontSize: "18px" }} />,
-          duration: 3000,
-          style: {
-            borderLeft: "4px solid #702834",
-            fontWeight: "500",
-          },
-        }
+      toast.custom(
+        () => (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderLeft: "4px solid #702834",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              fontFamily: "sans-serif",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#111",
+              minWidth: "240px",
+            }}
+          >
+            {isPlay
+              ? <FaGooglePlay style={{ color: "#702834", fontSize: "20px", flexShrink: 0 }} />
+              : <FaApple style={{ color: "#000", fontSize: "20px", flexShrink: 0 }} />
+            }
+            <span>{store} app coming soon!</span>
+          </div>
+        ),
+        { duration: 3000 }
       );
     }
   };
@@ -209,7 +225,7 @@ export default function DownloadPage() {
 
             {/* Status note */}
             <p className="text-gray-400 text-xs mt-3 flex items-center gap-1">
-              <span>🚀</span>
+              <span></span>
               <span>
                 {GOOGLE_PLAY_URL || APP_STORE_URL
                   ? "Click a button above to download the app."
