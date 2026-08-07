@@ -16,11 +16,8 @@ const Businesses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [actionModal, setActionModal] = useState({
-    open: false,
-    type: null,
-    business: null,
-  });
+  const [actionModal, setActionModal] = useState({ open: false, type: null, business: null });
+  const [viewItem, setViewItem] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -131,26 +128,24 @@ const Businesses = () => {
       : businesses.filter((b) => b.approvalStatus === statusFilter);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h2 className="text-3xl font-bold text-gray-800">
-          Business Management
-        </h2>
-        <div className="flex gap-2">
-          {["all", "pending", "approved", "rejected"].map((status) => (
-            <button
-              key={status}
-              className={`px-4 py-2 rounded-lg font-medium border transition-colors ${
-                statusFilter === status
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-              }`}
-              onClick={() => setStatusFilter(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
-        </div>
+    <div className="p-6">
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Business Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Review and approve business KYC requests.</p>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {["all", "pending", "approved", "rejected"].map((status) => (
+          <button
+            key={status}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"
+            style={statusFilter === status
+              ? { backgroundColor: "#702834", color: "#fff", borderColor: "#702834" }
+              : { backgroundColor: "#fff", color: "#374151", borderColor: "#d1d5db" }}
+            onClick={() => setStatusFilter(status)}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
       </div>
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
@@ -236,34 +231,30 @@ const Businesses = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {b.approvalStatus === "pending" && (
-                      <div className="flex gap-2">
-                        <button
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-                          onClick={() =>
-                            setActionModal({
-                              open: true,
-                              type: "approve",
-                              business: b,
-                            })
-                          }
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
-                          onClick={() =>
-                            setActionModal({
-                              open: true,
-                              type: "reject",
-                              business: b,
-                            })
-                          }
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        className="px-3 py-1 bg-[#0d9488] hover:bg-[#0f766e] text-white rounded text-xs"
+                        onClick={() => setViewItem(b)}
+                      >
+                        View
+                      </button>
+                      {b.approvalStatus === "pending" && (
+                        <>
+                          <button
+                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                            onClick={() => setActionModal({ open: true, type: "approve", business: b })}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
+                            onClick={() => setActionModal({ open: true, type: "reject", business: b })}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -273,8 +264,10 @@ const Businesses = () => {
       )}
       {/* Approve/Reject Modal */}
       {actionModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setActionModal({ open: false, type: null, business: null })}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">
               {actionModal.type === "approve"
                 ? "Approve Business"
@@ -336,6 +329,52 @@ const Businesses = () => {
                   {actionLoading ? "Rejecting..." : "Reject"}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.businessName}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {[
+                { label: "Business Name",  value: viewItem.businessName },
+                { label: "GST Number",     value: viewItem.gstNumber },
+                { label: "Owner Name",     value: viewItem.userId?.userDetails?.fullName },
+                { label: "Phone / Email",  value: viewItem.userId?.userDetails?.email || viewItem.userId?.phone },
+                { label: "Completed",      value: viewItem.isCompleted ? "Yes" : "No" },
+                { label: "Status",         value: viewItem.approvalStatus },
+              ].map(({ label, value }) => value ? (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{label}</p>
+                  <p className="text-gray-800 text-sm font-medium capitalize">{value}</p>
+                </div>
+              ) : null)}
+              {viewItem.approvalStatus === "rejected" && viewItem.rejectionReason && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Rejection Reason</p>
+                  <p className="text-red-600 text-sm">{viewItem.rejectionReason}</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
             </div>
           </div>
         </div>

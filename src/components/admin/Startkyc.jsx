@@ -4,6 +4,7 @@ import {
   UploadOutlined,
   EditOutlined,
   DeleteOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { PLACEHOLDER_IMAGE } from "../../utils/placeholderImage";
@@ -16,6 +17,7 @@ const getToken = () => localStorage.getItem("adminToken");
 const Startkyc = () => {
   const [kycList, setKycList] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [editingKyc, setEditingKyc] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [form] = Form.useForm();
@@ -163,6 +165,14 @@ const Startkyc = () => {
         <>
           <Button
             type="link"
+            icon={<EyeOutlined />}
+            onClick={() => setViewItem(record)}
+            style={{ color: "#0d9488" }}
+          >
+            View
+          </Button>
+          <Button
+            type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
@@ -183,16 +193,13 @@ const Startkyc = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
-        <h2>Trading Admin (KYC Style)</h2>
-        <Button type="primary" onClick={handleAdd}>
-          + Add KYC
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Three Step Process</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage the three-step onboarding process cards.</p>
+      </div>
+      <div className="flex justify-end mb-4">
+        <Button type="primary" onClick={handleAdd} style={{ backgroundColor: "#702834", borderColor: "#702834" }}>
+          + Add Step
         </Button>
       </div>
 
@@ -243,6 +250,49 @@ const Startkyc = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.title}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {viewItem.image && (
+                <img
+                  src={`/${viewItem.image}`}
+                  alt={viewItem.title}
+                  className="w-full h-48 object-cover rounded-lg border border-gray-100"
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              )}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</p>
+                <p className="text-gray-800 font-medium">{viewItem.title}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</p>
+                <p className="text-gray-700 text-sm leading-relaxed">{viewItem.description}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

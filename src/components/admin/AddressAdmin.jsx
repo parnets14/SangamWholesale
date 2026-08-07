@@ -98,20 +98,25 @@ const AddressAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Address</h1>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
-            <Plus size={18} />
-            Add Address
-          </motion.button>
-        </div>
+    <div className="p-6">
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Address Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage delivery addresses.</p>
+      </div>
+      <div className="flex justify-end mb-6">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg"
+          style={{ backgroundColor: "#702834" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
+        >
+          <Plus size={16} />
+          Add Address
+        </motion.button>
+      </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
@@ -180,7 +185,8 @@ const AddressAdmin = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
               onClick={() => setIsModalOpen(false)}
             >
               <motion.div
@@ -352,7 +358,10 @@ const AddressAdmin = () => {
                       type="submit"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white flex items-center gap-2"
+                      style={{ backgroundColor: "#702834" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
                     >
                       <Save size={16} />
                       {currentAddress !== null ? 'Update' : 'Save'}
@@ -363,7 +372,6 @@ const AddressAdmin = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
     </div>
   );
 };

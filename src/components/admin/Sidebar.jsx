@@ -1,70 +1,84 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../context/AdminContext";
+import {
+  MdDashboard, MdImage, MdInfo, MdPeople, MdCheckCircle,
+  MdCategory, MdFolder, MdShoppingBag, MdBusiness,
+  MdPerson, MdShoppingCart, MdRefresh, MdLogout,
+} from "react-icons/md";
+import logo from "../../assets/images/sangamwholesale.png";
 
+const navItems = [
+  { path: "/admin/dashboard",    label: "Dashboard",     icon: MdDashboard   },
+  { path: "/admin/banner",       label: "Banner",        icon: MdImage       },
+  { path: "/admin/aboutman",     label: "About Us",      icon: MdInfo        },
+  { path: "/admin/leadershi",    label: "Leadership",    icon: MdPeople      },
+  { path: "/admin/startkyc",     label: "Three Step",    icon: MdCheckCircle },
+  { path: "/admin/category",     label: "Category",      icon: MdCategory    },
+  { path: "/admin/subcategory",  label: "SubCategory",   icon: MdFolder      },
+  { path: "/admin/product",      label: "Products",      icon: MdShoppingBag },
+  { path: "/admin/businesses",   label: "Businesses",    icon: MdBusiness    },
+  { path: "/admin/user",         label: "Users",         icon: MdPerson      },
+  { path: "/admin/orders",       label: "Orders",        icon: MdShoppingCart},
+  { path: "/admin/return-orders",label: "Return Orders", icon: MdRefresh     },
+];
 
 const Sidebar = () => {
-  const { logout,login } = useAdmin();
+  const { logout } = useAdmin();
   const location = useLocation();
-  const navigate = useNavigate(); // ⬅️ Add this
-
-console.log('logout',logout);
-console.log('login',login);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); // clear session
-    navigate("/admin"); // ⬅️ navigate to login
+    logout();
+    navigate("/admin");
   };
 
-  const navItems = [
-    { path: "/admin/dashboard", label: "Dashboard", icon: "📊" },
-    { path: "/admin/banner", label: "Banner ", icon: "🖼️" },
-    { path: "/admin/aboutman", label: "About Us", icon: "ℹ️" },
-    {path: "/admin/Leadershi", label: "Leadership", icon: "👥" },
-    { path: "/admin/startkyc", label: "Three Step ", icon: "✅" },
-    { path: "/admin/category", label: "Category ", icon: "🗂️" },
-    { path: "/admin/subcategory", label: "SubCategory", icon: "📂" },
-    { path: "/admin/product", label: "Products", icon: "🛍️" },
-    { path: "/admin/businesses", label: "businesses", icon: "🏛️" },
-    { path: "/admin/User", label: "User", icon: "👤" },
-    { path: "/admin/orders", label: "Orders", icon: "📦" },
-    { path: "/admin/return-orders", label: "Return Orders", icon: "🔄" },
-  ];
-
   return (
-    <div className="fixed top-0 left-0 h-screen w-64 bg-gray-800 text-white p-4 shadow-lg z-50 flex flex-col">
-      <div className="mb-8">
-        <div className="flex flex-col items-center py-4 border-b border-gray-700">
-          <h2 className="text-lg font-bold text-center text-white">
-            Sangam Wholesale
-          </h2>
-          <span className="text-xs text-gray-400">Admin Panel</span>
+    <div className="fixed top-0 left-0 h-screen w-64 text-white z-50 flex flex-col" style={{ backgroundColor: "#0d1b2a" }}>
+
+      {/* Brand */}
+      <div className="flex flex-col items-center py-5 px-4 border-b" style={{ borderColor: "#1a2d3f" }}>
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-white border-2 mb-2 flex items-center justify-center" style={{ borderColor: "#702834" }}>
+          <img src={logo} alt="Sangam Wholesale" className="w-full h-full object-cover" />
         </div>
+        <h2 className="text-sm font-bold text-white tracking-wide">Sangam Wholesale</h2>
+        <span className="text-xs mt-0.5" style={{ color: "#8a9ab0" }}>Admin Panel</span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex items-center px-4 py-3 rounded transition-colors ${
-              location.pathname === item.path
-                ? "bg-blue-600 text-white"
-                : "hover:bg-gray-700 text-gray-300"
-            }`}
-          >
-            <span className="mr-3">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {navItems.map(({ path, label, icon: Icon }) => {
+          const isActive = location.pathname === path;
+          return (
+            <Link
+              key={path}
+              to={path}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+              style={{
+                backgroundColor: isActive ? "#702834" : "transparent",
+                color: isActive ? "#ffffff" : "#b0bec5",
+              }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "#1a2d3f"; }}
+              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
+            >
+              <Icon className="text-lg flex-shrink-0" />
+              {label}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-gray-700">
+      {/* Logout */}
+      <div className="px-2 py-4 border-t" style={{ borderColor: "#1a2d3f" }}>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition-colors text-white font-medium"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: "#702834" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
         >
-          <span className="mr-2">🚪</span> Logout
+          <MdLogout className="text-lg" />
+          Logout
         </button>
       </div>
     </div>

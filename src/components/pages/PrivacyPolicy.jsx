@@ -245,11 +245,11 @@ const PrivacyPolicy = () => {
           </p>
           <div className="space-y-2">
             <a
-              href="mailto:support@sangamwholesale.com"
+              href="mailto:sales@sangamwholesale.com"
               className="flex items-center gap-2 text-white/90 hover:text-white text-sm transition-colors"
             >
               <Mail className="w-4 h-4 flex-shrink-0" />
-             sales@sagamwholesale@gmail.com  
+              sales@sangamwholesale.com
             </a>
             
           </div>

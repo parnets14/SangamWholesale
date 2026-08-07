@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Edit2, Trash2, Plus, X, Loader } from "lucide-react";
+import { Plus, X, Loader } from "lucide-react";
 
 const API_BASE_URL = "https://sangamwholesale.com/api/Eco";
 
 const Ecosystem = () => {
   const [items, setItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [currentItem, setCurrentItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -14,14 +15,11 @@ const Ecosystem = () => {
     title: "",
   });
 
-  // Fetch all ecosystem items
   const fetchItems = async () => {
     try {
       setLoading(true);
       const response = await fetch(API_BASE_URL);
-      if (!response.ok) {
-        throw new Error("Failed to fetch items");
-      }
+      if (!response.ok) throw new Error("Failed to fetch items");
       const data = await response.json();
       setItems(data);
     } catch (error) {
@@ -32,7 +30,6 @@ const Ecosystem = () => {
     }
   };
 
-  // Load items on component mount
   useEffect(() => {
     fetchItems();
   }, []);
@@ -44,34 +41,25 @@ const Ecosystem = () => {
 
   const handleAddNew = () => {
     setCurrentItem(null);
-    setFormData({
-      numbers: items.length + 1,
-      title: "",
-    });
+    setFormData({ numbers: items.length + 1, title: "" });
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
     setCurrentItem(item);
-    setFormData({
-      numbers: item.numbers,
-      title: item.title,
-    });
+    setFormData({ numbers: item.numbers, title: item.title });
     setIsModalOpen(true);
+  };
+
+  const handleView = (item) => {
+    setViewItem(item);
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
-          method: "DELETE",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to delete item");
-        }
-
-        // Refresh the list after successful deletion
+        const response = await fetch(`${API_BASE_URL}/${id}`, { method: "DELETE" });
+        if (!response.ok) throw new Error("Failed to delete item");
         await fetchItems();
         alert("Item deleted successfully");
       } catch (error) {
@@ -98,35 +86,24 @@ const Ecosystem = () => {
       let response;
 
       if (currentItem) {
-        // Update existing item
         response = await fetch(`${API_BASE_URL}/${currentItem._id}`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestData),
         });
       } else {
-        // Add new item
         response = await fetch(API_BASE_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestData),
         });
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to save item");
-      }
+      if (!response.ok) throw new Error("Failed to save item");
 
-      // Refresh the list after successful save
       await fetchItems();
       setIsModalOpen(false);
-      alert(
-        currentItem ? "Item updated successfully" : "Item created successfully"
-      );
+      alert(currentItem ? "Item updated successfully" : "Item created successfully");
     } catch (error) {
       console.error("Error saving item:", error);
       alert("Failed to save item");
@@ -141,9 +118,9 @@ const Ecosystem = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="p-6">
         <div className="flex items-center justify-center h-64">
-          <Loader className="animate-spin h-8 w-8 text-blue-600" />
+          <Loader className="animate-spin h-8 w-8" style={{ color: "#702834" }} />
           <span className="ml-2 text-gray-600">Loading ecosystem items...</span>
         </div>
       </div>
@@ -151,14 +128,20 @@ const Ecosystem = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Our Ecosystem</h2>
+    <div className="p-6">
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Our Ecosystem</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage the stats and numbers shown in the Ecosystem section.</p>
+      </div>
+      <div className="flex justify-end mb-6">
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors"
+          style={{ backgroundColor: "#702834" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
         >
-          <Plus size={20} /> Add New
+          <Plus size={16} /> Add New
         </button>
       </div>
 
@@ -167,53 +150,94 @@ const Ecosystem = () => {
           <p className="text-gray-500 text-lg">No ecosystem items found.</p>
           <button
             onClick={handleAddNew}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+            className="mt-4 px-6 py-3 text-white rounded-lg transition-colors"
+            style={{ backgroundColor: "#702834" }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
           >
             Add Your First Item
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => (
-            <div
-              key={item._id}
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-gray-100"
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-500 font-mono text-sm">
-                    {formatNumber(item.numbers)}
-                  </span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                      aria-label="Edit"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                      aria-label="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  {item.title}
-                </h3>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Number</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((item) => (
+                  <tr key={item._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-gray-600">{formatNumber(item.numbers)}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{item.title}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleView(item)}
+                          className="bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1 rounded text-sm"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item._id)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* Modal */}
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.title}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">✕</button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Number</p>
+                <p className="text-3xl font-bold text-gray-800">{formatNumber(viewItem.numbers)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</p>
+                <p className="text-gray-800 font-medium">{viewItem.title}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center border-b p-4">
               <h3 className="text-lg font-semibold">
                 {currentItem ? "Edit Item" : "Add New Item"}
@@ -228,9 +252,7 @@ const Ecosystem = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Number
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Number</label>
                 <input
                   type="number"
                   name="numbers"
@@ -243,9 +265,7 @@ const Ecosystem = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
                   type="text"
                   name="title"
@@ -267,7 +287,10 @@ const Ecosystem = () => {
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
+                  style={{ backgroundColor: "#702834" }}
+                  onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = "#5a1f29"; }}
+                  onMouseLeave={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = "#702834"; }}
                   disabled={submitting}
                 >
                   {submitting && <Loader className="animate-spin h-4 w-4" />}

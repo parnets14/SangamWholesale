@@ -14,6 +14,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useAdmin } from "../context/AdminContext";
@@ -36,6 +37,7 @@ const Subcategory = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingSubcategory, setEditingSubcategory] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -230,15 +232,17 @@ const Subcategory = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Subcategory Management
-        </h1>
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Subcategory Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Add, edit or remove subcategories under each category.</p>
+      </div>
+      <div className="flex justify-end mb-4">
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => openModal()}
           disabled={!isAdminAuthenticated}
+          style={{ backgroundColor: "#702834", borderColor: "#702834" }}
         >
           Add Subcategory
         </Button>
@@ -321,6 +325,14 @@ const Subcategory = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button
+                    icon={<EyeOutlined />}
+                    onClick={() => setViewItem(subcat)}
+                    style={{ backgroundColor: "#0d9488", borderColor: "#0d9488", color: "#fff" }}
+                    size="small"
+                  >
+                    View
+                  </Button>
+                  <Button
                     icon={<EditOutlined />}
                     onClick={() => openModal(subcat)}
                     type="primary"
@@ -345,7 +357,54 @@ const Subcategory = () => {
         </div>
       )}
 
-      {/* Modal for Add/Edit — no destroyOnClose to keep form instance connected */}
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.name}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {viewItem.image && (
+                <img
+                  src={getImageUrl(viewItem.image)}
+                  alt={viewItem.name}
+                  className="w-full h-48 object-cover rounded-lg border border-gray-100"
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              )}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Name</p>
+                <p className="text-gray-800 font-medium">{viewItem.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</p>
+                <p className="text-gray-700 text-sm leading-relaxed">{viewItem.description}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Category</p>
+                <p className="text-gray-700 text-sm">{viewItem.category?.name || "N/A"}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Add/Edit */}
       <Modal
         title={editingSubcategory ? "Edit Subcategory" : "Add Subcategory"}
         open={isModalVisible}

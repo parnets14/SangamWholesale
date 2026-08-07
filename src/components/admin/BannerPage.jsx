@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Modal from "react-modal";
+import { X } from "lucide-react";
 import { PLACEHOLDER_IMAGE } from "../../utils/placeholderImage";
 
 Modal.setAppElement("#root");
@@ -7,7 +8,9 @@ Modal.setAppElement("#root");
 const BannerPage = () => {
   const [banners, setBanners] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [currentBanner, setCurrentBanner] = useState(null);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -21,7 +24,6 @@ const BannerPage = () => {
 
   const getToken = () => localStorage.getItem("adminToken");
 
-  // Fetch all banners on component mount
   useEffect(() => {
     fetchBanners();
   }, []);
@@ -33,7 +35,6 @@ const BannerPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // Backend returns { count, banners } — extract the array
         setBanners(Array.isArray(data) ? data : (data.banners ?? []));
       } else if (response.status === 404) {
         setBanners([]);
@@ -57,11 +58,10 @@ const BannerPage = () => {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const urls = files.map((file) => URL.createObjectURL(file));
-
     setFormData((prev) => ({
       ...prev,
-      imageFiles: files, // Replace with new files
-      imageUrls: urls, // Replace with new URLs
+      imageFiles: files,
+      imageUrls: urls,
     }));
   };
 
@@ -69,15 +69,9 @@ const BannerPage = () => {
     setFormData((prev) => {
       const newImageUrls = [...prev.imageUrls];
       const newImageFiles = [...prev.imageFiles];
-
       newImageUrls.splice(index, 1);
       newImageFiles.splice(index, 1);
-
-      return {
-        ...prev,
-        imageUrls: newImageUrls,
-        imageFiles: newImageFiles,
-      };
+      return { ...prev, imageUrls: newImageUrls, imageFiles: newImageFiles };
     });
   };
 
@@ -92,23 +86,15 @@ const BannerPage = () => {
       });
     } else {
       setCurrentBanner(null);
-      setFormData({
-        title: "",
-        description: "",
-        imageFiles: [],
-        imageUrls: [],
-      });
+      setFormData({ title: "", description: "", imageFiles: [], imageUrls: [] });
     }
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    // Clean up object URLs
     formData.imageUrls.forEach((url) => {
-      if (url.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-      }
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
     });
   };
 
@@ -120,22 +106,18 @@ const BannerPage = () => {
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
-
-      // Append all image files with the field name "image"
       formData.imageFiles.forEach((file) => {
         formDataToSend.append("image", file);
       });
 
       let response;
       if (currentBanner) {
-        // Update existing banner
         response = await fetch(`${API_BASE_URL}/${currentBanner._id}`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${getToken()}` },
           body: formDataToSend,
         });
       } else {
-        // Create new banner
         response = await fetch(API_BASE_URL, {
           method: "POST",
           headers: { Authorization: `Bearer ${getToken()}` },
@@ -144,15 +126,10 @@ const BannerPage = () => {
       }
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("Banner saved successfully:", result);
-
-        // Refresh the banners list
         await fetchBanners();
         closeModal();
       } else {
         const errorData = await response.json();
-        console.error("Error saving banner:", errorData);
         alert(`Error: ${errorData.error || "Failed to save banner"}`);
       }
     } catch (error) {
@@ -172,12 +149,9 @@ const BannerPage = () => {
         });
 
         if (response.ok) {
-          console.log("Banner deleted successfully");
-          // Refresh the banners list
           await fetchBanners();
         } else {
           const errorData = await response.json();
-          console.error("Error deleting banner:", errorData);
           alert(`Error: ${errorData.error || "Failed to delete banner"}`);
         }
       } catch (error) {
@@ -203,13 +177,19 @@ const BannerPage = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Banner Management</h2>
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Banner Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Add, edit or remove homepage banners.</p>
+      </div>
+      <div className="flex justify-end mb-6">
         <button
           onClick={() => openModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors"
+          style={{ backgroundColor: "#702834" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
         >
-          Add New Banner
+          + Add New Banner
         </button>
       </div>
 
@@ -218,75 +198,128 @@ const BannerPage = () => {
           <div className="text-gray-500 text-lg">No banners found</div>
           <button
             onClick={() => openModal()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="mt-4 px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors"
+            style={{ backgroundColor: "#702834" }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
           >
             Create Your First Banner
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {banners.map((banner) => (
-            <div
-              key={banner._id}
-              className="bg-white rounded-lg shadow overflow-hidden"
-            >
-              <div className="relative">
-                <div className="grid grid-cols-2 gap-1 p-2">
-                  {banner.images && banner.images.length > 0 ? (
-                    banner.images.slice(0, 4).map((imagePath, index) => (
-                      <img
-                        key={index}
-                        src={getImageUrl(imagePath)}
-                        alt={`banner-${index}`}
-                        className="h-24 w-full object-cover rounded"
-                        onError={(e) => {
-                          e.target.src = PLACEHOLDER_IMAGE;
-                        }}
-                      />
-                    ))
-                  ) : (
-                    <div className="col-span-2 w-full h-24 bg-gray-100 flex items-center justify-center text-gray-500">
-                      No image
-                    </div>
-                  )}
-                </div>
-                {banner.images && banner.images.length > 4 && (
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                    +{banner.images.length - 4} more
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-lg">{banner.title}</h3>
-                {banner.description && (
-                  <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                    {banner.description}
-                  </p>
-                )}
-                <div className="text-xs text-gray-500 mt-2">
-                  {banner.images?.length || 0} images
-                </div>
-                <div className="flex justify-end space-x-2 mt-4">
-                  <button
-                    onClick={() => openModal(banner)}
-                    className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(banner)}
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Images</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Image Count</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {banners.map((banner) => (
+                  <tr key={banner._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      {banner.images && banner.images.length > 0 ? (
+                        <img
+                          src={getImageUrl(banner.images[0])}
+                          alt={banner.title}
+                          className="w-20 h-14 object-cover rounded"
+                          onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
+                        />
+                      ) : (
+                        <div className="w-20 h-14 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                          No image
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{banner.title}</td>
+                    <td className="px-4 py-3 text-gray-600 text-sm max-w-xs truncate">{banner.description}</td>
+                    <td className="px-4 py-3 text-gray-600 text-sm">{banner.images?.length || 0} images</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => setViewItem(banner)}
+                          className="bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1 rounded text-sm"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => openModal(banner)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(banner)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* Modal for Add/Edit Banner */}
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.title}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">✕</button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</p>
+                <p className="text-gray-800 font-medium">{viewItem.title}</p>
+              </div>
+              {viewItem.description && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</p>
+                  <p className="text-gray-700 text-sm leading-relaxed">{viewItem.description}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Images ({viewItem.images?.length || 0})
+                </p>
+                {viewItem.images && viewItem.images.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {viewItem.images.map((imgPath, index) => (
+                      <img
+                        key={index}
+                        src={getImageUrl(imgPath)}
+                        alt={`Banner image ${index + 1}`}
+                        className="w-full h-32 object-cover rounded border border-gray-100"
+                        onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No images</p>
+                )}
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onRequestClose={closeModal}
@@ -301,9 +334,9 @@ const BannerPage = () => {
             </h3>
             <button
               onClick={closeModal}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className="text-gray-500 hover:text-gray-700"
             >
-              &times;
+              <X size={22} />
             </button>
           </div>
 
@@ -333,9 +366,7 @@ const BannerPage = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Banner Images *
-              </label>
+              <label className="block text-gray-700 mb-2">Banner Images *</label>
               <input
                 type="file"
                 accept="image/*"
@@ -344,9 +375,7 @@ const BannerPage = () => {
                 className="w-full px-3 py-2 border rounded"
                 required={!currentBanner && formData.imageFiles.length === 0}
               />
-              <div className="text-xs text-gray-500 mt-1">
-                You can select up to 10 images
-              </div>
+              <div className="text-xs text-gray-500 mt-1">You can select up to 10 images</div>
 
               {formData.imageUrls.length > 0 && (
                 <div className="mt-3">
@@ -358,9 +387,7 @@ const BannerPage = () => {
                           src={url.startsWith("blob:") ? url : getImageUrl(url)}
                           alt={`preview-${index}`}
                           className="h-20 w-full object-cover rounded"
-                          onError={(e) => {
-                            e.target.src = PLACEHOLDER_IMAGE;
-                          }}
+                          onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
                         />
                         <button
                           type="button"
@@ -389,13 +416,12 @@ const BannerPage = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
+                className="px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                style={{ backgroundColor: "#702834" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
               >
-                {isLoading
-                  ? "Saving..."
-                  : currentBanner
-                  ? "Update Banner"
-                  : "Create Banner"}
+                {isLoading ? "Saving..." : currentBanner ? "Update Banner" : "Create Banner"}
               </button>
             </div>
           </div>

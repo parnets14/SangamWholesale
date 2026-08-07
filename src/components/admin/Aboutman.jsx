@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { PLACEHOLDER_IMAGE } from "../../utils/placeholderImage";
 
 const Aboutman = () => {
   const [founders, setFounders] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [currentItem, setCurrentItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,6 +18,7 @@ const Aboutman = () => {
   const API_BASE_URL = "/api/Founder";
 
   const getToken = () => localStorage.getItem("adminToken");
+
   useEffect(() => {
     fetchFounders();
   }, []);
@@ -62,10 +65,14 @@ const Aboutman = () => {
     setFormData({
       name: item.name,
       description: item.description,
-      image: null, // Reset image, will show existing one in preview
+      image: null,
     });
     setShowModal(true);
     setError("");
+  };
+
+  const handleView = (item) => {
+    setViewItem(item);
   };
 
   const handleDelete = async (id) => {
@@ -76,7 +83,6 @@ const Aboutman = () => {
           method: "DELETE",
           headers: { Authorization: `Bearer ${getToken()}` },
         });
-
         if (response.ok) {
           setFounders(founders.filter((item) => item._id !== id));
         } else {
@@ -96,14 +102,12 @@ const Aboutman = () => {
       setLoading(true);
       setError("");
 
-      // Validate required fields
       if (!formData.name.trim() || !formData.description.trim()) {
         setError("Name and description are required");
         setLoading(false);
         return;
       }
 
-      // For new founder, image is required
       if (!currentItem && !formData.image) {
         setError("Image is required");
         setLoading(false);
@@ -113,15 +117,11 @@ const Aboutman = () => {
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
       formDataToSend.append("description", formData.description);
-
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
 
-      const url = currentItem
-        ? `${API_BASE_URL}/${currentItem._id}`
-        : API_BASE_URL;
-
+      const url = currentItem ? `${API_BASE_URL}/${currentItem._id}` : API_BASE_URL;
       const method = currentItem ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -132,19 +132,11 @@ const Aboutman = () => {
 
       if (response.ok) {
         const result = await response.json();
-
         if (currentItem) {
-          // Update existing founder
-          setFounders(
-            founders.map((item) =>
-              item._id === currentItem._id ? result : item
-            )
-          );
+          setFounders(founders.map((item) => item._id === currentItem._id ? result : item));
         } else {
-          // Add new founder
           setFounders([result, ...founders]);
         }
-
         setShowModal(false);
         setFormData({ name: "", description: "", image: null });
       } else {
@@ -161,18 +153,23 @@ const Aboutman = () => {
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return PLACEHOLDER_IMAGE;
-    // Relative path — proxied to backend in dev, served directly in production
     return `/${imagePath}`;
   };
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Founder Management</h2>
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">About Us — Founders</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage founder profiles shown on the About Us page.</p>
+      </div>
+      <div className="flex justify-end mb-6">
         <button
           onClick={handleAdd}
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2 rounded"
+          className="px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+          style={{ backgroundColor: "#702834" }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
         >
           + Add Founder
         </button>
@@ -191,74 +188,125 @@ const Aboutman = () => {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-3 border-b">Image</th>
-              <th className="p-3 border-b">Name</th>
-              <th className="p-3 border-b">Description</th>
-              <th className="p-3 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {founders.length === 0 && !loading ? (
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan="4" className="text-center py-6 text-gray-500">
-                  No founders found
-                </td>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Image</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ) : (
-              founders.map((item) => (
-                <tr key={item._id} className="hover:bg-gray-50 border-b">
-                  <td className="p-3">
-                    <img
-                      src={getImageUrl(item.image)}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded"
-                      onError={(e) => {
-                        e.target.src = PLACEHOLDER_IMAGE;
-                      }}
-                    />
-                  </td>
-                  <td className="p-3">{item.name}</td>
-                  <td className="p-3">{item.description}</td>
-                  <td className="p-3 space-x-2">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      disabled={loading}
-                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 disabled:bg-yellow-400"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      disabled={loading}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:bg-red-400"
-                    >
-                      Delete
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {founders.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-6 text-gray-500">
+                    No founders found
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                founders.map((item) => (
+                  <tr key={item._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        className="w-14 h-14 object-cover rounded"
+                        onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
+                      />
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{item.name}</td>
+                    <td className="px-4 py-3 text-gray-600 text-sm max-w-xs truncate">{item.description}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleView(item)}
+                          className="bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1 rounded text-sm"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          disabled={loading}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item._id)}
+                          disabled={loading}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.name}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <img
+                src={getImageUrl(viewItem.image)}
+                alt={viewItem.name}
+                className="w-full h-48 object-cover rounded-lg border border-gray-100"
+                onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Name</p>
+                <p className="text-gray-800 font-medium">{viewItem.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</p>
+                <p className="text-gray-700 text-sm leading-relaxed">{viewItem.description}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setShowModal(false)}>
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
                 {currentItem ? "Edit Founder" : "Add Founder"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-xl font-bold text-gray-600 hover:text-gray-800"
+                className="text-gray-500 hover:text-gray-700"
               >
-                ×
+                <X size={22} />
               </button>
             </div>
 
@@ -270,9 +318,7 @@ const Aboutman = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input
                   type="text"
                   name="name"
@@ -285,9 +331,7 @@ const Aboutman = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
                 <textarea
                   name="description"
                   placeholder="Enter founder description"
@@ -310,18 +354,13 @@ const Aboutman = () => {
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {!currentItem && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Image is required for new founder
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Image is required for new founder</p>
                 )}
               </div>
 
-              {/* Image Preview */}
               {formData.image && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New Image Preview:
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">New Image Preview:</label>
                   <img
                     src={URL.createObjectURL(formData.image)}
                     alt="Preview"
@@ -330,19 +369,14 @@ const Aboutman = () => {
                 </div>
               )}
 
-              {/* Current Image (for edit mode) */}
               {currentItem && !formData.image && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Image:
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Image:</label>
                   <img
                     src={getImageUrl(currentItem.image)}
                     alt="Current"
                     className="w-full h-32 object-contain border rounded"
-                    onError={(e) => {
-                      e.target.src = PLACEHOLDER_IMAGE;
-                    }}
+                    onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
                   />
                 </div>
               )}
@@ -359,7 +393,7 @@ const Aboutman = () => {
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
+                className="px-4 py-2 bg-[#702834] hover:bg-[#5a1f29] text-white rounded disabled:opacity-50"
               >
                 {loading ? "Saving..." : "Save"}
               </button>

@@ -45,6 +45,9 @@ import About from "./components/home/About";
 import Address from "./components/pages/Address";
 import DownloadPage from "./components/pages/DownloadPage";
 import PrivacyPolicy from "./components/pages/PrivacyPolicy";
+import BlogPage from "./components/pages/BlogPage";
+import TermsAndConditions from "./components/pages/TermsAndConditions";
+import ReturnPolicy from "./components/pages/ReturnPolicy";
 import { Navigate } from "react-router-dom";
 
 // Admin Components
@@ -129,6 +132,9 @@ function AppContent() {
           <Route path="/download-ios" element={<DownloadPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/return-policy" element={<ReturnPolicy />} />
           <Route path="/Home" element={<HomePage />} />
 
           {/* Category Routes with Cart State */}
@@ -211,9 +217,9 @@ function AppContent() {
             <Route path="aboutman" element={<Aboutman />} />
             <Route path="leadershi" element={<Leadershi />} />
             <Route path="startkyc" element={<Startkyc />} />
-            <Route path="Logo" element={<LogoAdmin />} />
-            <Route path="Category" element={<Category />} />
-            <Route path="Subcategory" element={<SubCategory />} />
+            <Route path="logo" element={<LogoAdmin />} />
+            <Route path="category" element={<Category />} />
+            <Route path="subcategory" element={<SubCategory />} />
             <Route path="product" element={<Product />} />
             <Route path="ecosystem" element={<Ecosystem />} />
             <Route path="businesses" element={<Businesses />} />

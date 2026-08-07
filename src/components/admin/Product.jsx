@@ -21,6 +21,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useAdmin } from "../context/AdminContext";
@@ -36,6 +37,7 @@ const Product = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -340,6 +342,11 @@ const Product = () => {
       render: (_, record) => (
         <Space>
           <Button
+            icon={<EyeOutlined />}
+            onClick={() => setViewItem(record)}
+            style={{ backgroundColor: "#0d9488", borderColor: "#0d9488", color: "#fff" }}
+          />
+          <Button
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             type="primary"
@@ -358,8 +365,14 @@ const Product = () => {
   ];
 
   return (
+    <div className="p-6">
+      {/* Page header */}
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">Product Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Add, edit or remove products from the catalog.</p>
+      </div>
+
     <Card
-      title="Product Management"
       variant="outlined"
       extra={
         <Button
@@ -367,6 +380,7 @@ const Product = () => {
           icon={<PlusOutlined />}
           onClick={handleAdd}
           disabled={!isAdminAuthenticated}
+          style={{ backgroundColor: "#702834", borderColor: "#702834" }}
         >
           Add Product
         </Button>
@@ -584,7 +598,60 @@ const Product = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* View Modal */}
+      {viewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.1)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-800">{viewItem.name}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors text-lg">✕</button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {viewItem.image && (
+                <img
+                  src={viewItem.image.startsWith("http") ? viewItem.image : `/products/${viewItem.image}`}
+                  alt={viewItem.name}
+                  className="w-full h-48 object-cover rounded-lg border border-gray-100"
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Name",        value: viewItem.name },
+                  { label: "Brand",       value: viewItem.brand },
+                  { label: "Price",       value: viewItem.price ? `₹${viewItem.price}` : "-" },
+                  { label: "Discount",    value: viewItem.discountPrice ? `₹${viewItem.discountPrice}` : "-" },
+                  { label: "Unit",        value: viewItem.unit },
+                  { label: "Quantity",    value: viewItem.quantity },
+                  { label: "Stock",       value: viewItem.stock },
+                  { label: "Category",    value: viewItem.subcategory?.category?.name || "N/A" },
+                  { label: "Subcategory", value: viewItem.subcategory?.name || "N/A" },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{label}</p>
+                    <p className="text-gray-800 text-sm font-medium">{value || "-"}</p>
+                  </div>
+                ))}
+              </div>
+              {viewItem.description && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</p>
+                  <p className="text-gray-700 text-sm leading-relaxed">{viewItem.description}</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
+    </div>
   );
 };
 
