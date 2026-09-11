@@ -17,11 +17,14 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import useRazorpay from '../../hooks/useRazorpay';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, getTotal, clearCart } = useCart();
   const { user, token } = useAuth();
+
+  const { openRazorpay } = useRazorpay();
 
   // Address state
   const [addresses, setAddresses] = useState([]);
@@ -79,75 +82,144 @@ const CheckoutPage = () => {
     return `${address.shopName}, ${address.shopNumber}, ${address.areaName}, ${address.town}, ${address.city} - ${address.pincode}`;
   };
 
-  // Place order
+  // ── Shared: save order to backend after payment is resolved ─────────────────
+  const saveOrder = async ({ paymentMethodLabel, razorpayPaymentId = null }) => {
+    const subtotal = getTotal();
+    const gst = subtotal * 0.18;
+    const total = subtotal * 1.18;
+
+    const orderPayload = {
+      items: cartItems.map(item => ({
+        productId: item._id,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      deliveryAddress: formatAddress(selectedAddress),
+      addressName: selectedAddress.shopName,
+      addressContact: selectedAddress.deliveryContact || '',
+      paymentMethod: paymentMethodLabel,
+      razorpayPaymentId,          // null for COD, populated for UPI
+      orderNotes,
+      subtotal,
+      gst,
+      total,
+      orderId: `UD${Math.floor(Math.random() * 1000000)}`,
+    };
+
+    const response = await fetch('https://sangamwholesale.com/api/orders/', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orderPayload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Could not place order');
+    return data;
+  };
+
+  // ── Main handler: branches on payment method ─────────────────────────────
   const handlePlaceOrder = async () => {
     setError('');
     setSuccess('');
-    if (!token) {
-      setError('Please login to place your order.');
-      return;
-    }
-    if (!selectedAddress) {
-      setError('Please select a delivery address.');
-      return;
-    }
-    setPlacingOrder(true);
-    try {
-      const subtotal = getTotal();
-      const gst = subtotal * 0.18;
-      const total = subtotal * 1.18;
-      const orderPayload = {
-        items: cartItems.map(item => ({
-          productId: item._id,
-          name: item.name,
-          image: item.image,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        deliveryAddress: formatAddress(selectedAddress),
-        addressName: selectedAddress.shopName,
-        addressContact: selectedAddress.deliveryContact || '',
-        paymentMethod,
-        orderNotes,
-        subtotal,
-        gst,
-        total,
-        orderId: `UD${Math.floor(Math.random() * 1000000)}`,
-      };
-      const response = await fetch('https://sangamwholesale.com/api/orders/', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderPayload),
-      });
-      const data = await response.json();
-      if (response.ok) {
+
+    if (!token) { setError('Please login to place your order.'); return; }
+    if (!selectedAddress) { setError('Please select a delivery address.'); return; }
+    if (cartItems.length === 0) { setError('Your cart is empty.'); return; }
+
+    // ── COD: place order directly ──────────────────────────────────────────
+    if (paymentMethod === 'cod') {
+      setPlacingOrder(true);
+      try {
+        const data = await saveOrder({ paymentMethodLabel: 'cod' });
         clearCart();
         setSuccess('Order placed successfully!');
         setTimeout(() => {
-          navigate('/order-confirmation', { state: { orderDetails: {
-            orderId: data.order.orderId,
-            amount: data.order.total,
-            subtotal: data.order.subtotal,
-            gst: data.order.gst,
-            total: data.order.total,
-            items: data.order.items,
-            fullName: user?.fullName || '',
-            address: data.order.deliveryAddress,
-            city: selectedAddress?.city || '',
-            pincode: selectedAddress?.pincode || '',
-            paymentMethod,
-          }} });
+          navigate('/order-confirmation', {
+            state: {
+              orderDetails: {
+                orderId: data.order.orderId,
+                amount: data.order.total,
+                subtotal: data.order.subtotal,
+                gst: data.order.gst,
+                total: data.order.total,
+                items: data.order.items,
+                fullName: user?.fullName || '',
+                address: data.order.deliveryAddress,
+                city: selectedAddress?.city || '',
+                pincode: selectedAddress?.pincode || '',
+                paymentMethod: 'cod',
+              },
+            },
+          });
         }, 1200);
-      } else {
-        setError(data.message || 'Could not place order');
+      } catch (err) {
+        setError('Order Error: ' + err.message);
+      } finally {
+        setPlacingOrder(false);
       }
-    } catch (err) {
-      setError('Order Error: ' + err.message);
-    } finally {
-      setPlacingOrder(false);
+      return;
+    }
+
+    // ── UPI: open Razorpay modal first, save order only after verified ──────
+    if (paymentMethod === 'upi') {
+      setPlacingOrder(true);
+      const totalAmount = getTotal() * 1.18; // rupees incl. GST
+
+      openRazorpay({
+        amount: totalAmount,
+        user,
+        token,
+
+        // Called only after backend signature verification succeeds
+        onSuccess: async ({ razorpay_payment_id }) => {
+          try {
+            const data = await saveOrder({
+              paymentMethodLabel: 'upi',
+              razorpayPaymentId: razorpay_payment_id,
+            });
+            clearCart();
+            setSuccess('Payment successful! Order placed.');
+            setTimeout(() => {
+              navigate('/order-confirmation', {
+                state: {
+                  orderDetails: {
+                    orderId: data.order.orderId,
+                    amount: data.order.total,
+                    subtotal: data.order.subtotal,
+                    gst: data.order.gst,
+                    total: data.order.total,
+                    items: data.order.items,
+                    fullName: user?.fullName || '',
+                    address: data.order.deliveryAddress,
+                    city: selectedAddress?.city || '',
+                    pincode: selectedAddress?.pincode || '',
+                    paymentMethod: 'upi',
+                    razorpayPaymentId: razorpay_payment_id,
+                  },
+                },
+              });
+            }, 1200);
+          } catch (err) {
+            setError('Payment done but order saving failed: ' + err.message);
+          } finally {
+            setPlacingOrder(false);
+          }
+        },
+
+        // Called on cancel / failure — do NOT save the order
+        onFailure: (err) => {
+          // Only show as error if it wasn't a deliberate cancel
+          if (err?.message !== 'Payment modal dismissed by user') {
+            setError('Payment failed. Please try again.');
+          }
+          setPlacingOrder(false);
+        },
+      });
     }
   };
 
@@ -418,7 +490,12 @@ const CheckoutPage = () => {
             onClick={handlePlaceOrder}
             disabled={placingOrder || !token || !selectedAddress || cartItems.length === 0}
           >
-            {placingOrder ? 'Placing Order...' : 'Place Order'}
+            {placingOrder
+              ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
+              : paymentMethod === 'upi'
+                ? `Pay ₹${(getTotal() * 1.18).toLocaleString(undefined, { maximumFractionDigits: 0 })} via Razorpay`
+                : 'Place Order (COD)'
+            }
           </button>
         </div>
       </div>
