@@ -2,6 +2,16 @@ import React from "react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 
+// Resolve product image to a usable URL.
+// The DB stores just a filename (e.g. "basmati.jpg").
+// UserApiContext normalises it to "/products/basmati.jpg".
+// Either way we make sure the cart always shows the correct URL.
+const resolveImage = (image) => {
+  if (!image) return null;
+  if (image.startsWith("http") || image.startsWith("/")) return image;
+  return `/products/${image}`;
+};
+
 const CartPag = () => {
   const {
     cartItems,
@@ -61,8 +71,9 @@ const CartPag = () => {
                       {cartItems.map((item) => (
             <div key={item._id} className="flex items-center py-6">
                             <img
-                              src={item.image}
+                              src={resolveImage(item.image)}
                               alt={item.name}
+                onError={(e) => { e.target.style.display = 'none'; }}
                 className="w-20 h-20 object-cover rounded-lg mr-6 border"
               />
               <div className="flex-1">

@@ -35,31 +35,13 @@ const ProductDetails = () => {
 
   const { getProductById, products } = useUserApi();
 
-  // Load product data
+  // Always fetch fresh from API — never trust location.state or cached list
+  // This ensures the correct image and data is always shown
   useEffect(() => {
     const loadProduct = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        // First try to get from location state (if navigated from product list)
-        if (location.state?.product) {
-          setProduct(location.state.product);
-          setLoading(false);
-          return;
-        }
-
-        // If not in state, try to find in products array
-        const foundProduct = products.find(
-          (p) => p.id === productId || p._id === productId
-        );
-        if (foundProduct) {
-          setProduct(foundProduct);
-          setLoading(false);
-          return;
-        }
-
-        // If not found in array, fetch from API
         const productData = await getProductById(productId);
         setProduct(productData);
       } catch (err) {
@@ -73,7 +55,7 @@ const ProductDetails = () => {
     if (productId) {
       loadProduct();
     }
-  }, [productId, location.state, products, getProductById]);
+  }, [productId]);
 
   const handleQuantityChange = (action) => {
     if (action === "increase") {
@@ -208,15 +190,21 @@ const ProductDetails = () => {
         {/* Add bottom padding for fixed bottom bar */}
         {/* Enhanced Product Image */}
         <div className="relative h-150 bg-gray-100 mb-3">
-          <img
-            src={
-              product.image ||
-              `https://sangamwholesale.com/subcategories/${subcategory?.image || ""}`
-            }
-            alt={product.name}
-            className="w-full h-full object-contain"
-            onError={handleImageError}
-          />
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="w-full h-full object-contain"
+              onError={handleImageError}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+              <svg className="w-16 h-16 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 20.25h18A2.25 2.25 0 0023.25 18V6A2.25 2.25 0 0021 3.75H3A2.25 2.25 0 00.75 6v12A2.25 2.25 0 003 20.25z" />
+              </svg>
+              <span className="text-gray-400 text-sm font-medium">No Image</span>
+            </div>
+          )}
 
           {/* Stock Badge */}
           <div className="absolute top-4 left-4 bg-green-600 bg-opacity-90 text-white px-3 py-2 rounded-full flex items-center shadow-lg">

@@ -218,7 +218,32 @@ export const UserApiProvider = ({ children }) => {
       setError(null);
 
       const data = await makeRequest(`/products/${id}`);
-      return data;
+      const product = data.product || data;
+
+      // Transform to same shape as fetchProducts / getProductsBySubcategory
+      return {
+        id: product._id,
+        _id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        discountPrice: product.discountPrice,
+        stock: product.stock,
+        unit: product.unit,
+        quantity: product.quantity,
+        brand: product.brand || null,
+        image: product.image ? getImageUrl("products", product.image) : null,
+        subcategoryId: product.subcategory?._id,
+        subcategoryName: product.subcategory?.name,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        discountPercentage:
+          product.discountPrice && product.price
+            ? Math.round(
+                ((product.price - product.discountPrice) / product.price) * 100
+              )
+            : 0,
+      };
     } catch (err) {
       setError(err.message);
       throw err;

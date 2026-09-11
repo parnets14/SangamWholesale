@@ -268,14 +268,20 @@ const Product = () => {
             ? image
             : `/products/${image}`
           : null;
+
+        // inline SVG placeholder — shows when image is null OR when the
+        // file is missing from disk (404) so admin always sees something
+        const placeholder =
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='%23f3f4f6'%3E%3Crect width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='11' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+
         return (
           <Image
-            src={url || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}
+            src={url || placeholder}
             alt="product"
             width={80}
             height={80}
             style={{ objectFit: "cover" }}
-            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMbSURBVHgB7ZpNaBNBFMffJNk0TZo0aRJiSVqwFg+iB0GQggcRQRART168iHjxoEfx4MmLBw8eBMGDePHgQRAEQRAEQRAEL6IHQRAEQRAEQfAiehAEQRAEQRAEL6IHQRAEQRAEQfAiehAEQRAEQRAEL6IHQRAEQRAEQfAiehAEQRAEQRAEL6IHQRAEQRAEQfAiehAEQRAEQRAEL6IHQRAEQRAEQfAiehAEQRAEQRAEL6IH"
+            fallback={placeholder}
             preview={!!url}
           />
         );

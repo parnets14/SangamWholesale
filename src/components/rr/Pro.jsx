@@ -216,9 +216,13 @@ const Pro = () => {
             >
               <div className="relative">
                 <img
-                  src={product.image}
+                  src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='192' fill='%23e5e7eb'%3E%3Crect width='200' height='192'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E"}
                   alt={product.name}
                   className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='192' fill='%23e5e7eb'%3E%3Crect width='200' height='192'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-white rounded-full px-2 py-1 flex items-center">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1" />

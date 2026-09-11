@@ -403,12 +403,13 @@ const Subpage = () => {
                         >
                           <div className="relative">
                             <img
-                              src={
-                                product.image || "/placeholder-product.png"
-                              }
+                              src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='192' fill='%23e5e7eb'%3E%3Crect width='200' height='192'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E"}
                               alt={product.name}
                               className="w-full h-48 object-cover"
-                              onError={handleImageError}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='192' fill='%23e5e7eb'%3E%3Crect width='200' height='192'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+                              }}
                             />
                             {/* {product.discountPercentage > 0 && (
                               <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
