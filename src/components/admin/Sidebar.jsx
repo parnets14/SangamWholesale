@@ -4,7 +4,7 @@ import { useAdmin } from "../context/AdminContext";
 import {
   MdDashboard, MdImage, MdInfo, MdPeople, MdCheckCircle,
   MdCategory, MdFolder, MdShoppingBag, MdBusiness,
-  MdPerson, MdShoppingCart, MdRefresh, MdLogout,
+  MdPerson, MdShoppingCart, MdRefresh, MdLogout, MdTwoWheeler,
 } from "react-icons/md";
 import logo from "../../assets/images/sangamwholesale.png";
 
@@ -13,14 +13,13 @@ const navItems = [
   { path: "/admin/banner",       label: "Banner",        icon: MdImage       },
   { path: "/admin/aboutman",     label: "About Us",      icon: MdInfo        },
   { path: "/admin/leadershi",    label: "Leadership",    icon: MdPeople      },
-  { path: "/admin/startkyc",     label: "Three Step",    icon: MdCheckCircle },
   { path: "/admin/category",     label: "Category",      icon: MdCategory    },
   { path: "/admin/subcategory",  label: "SubCategory",   icon: MdFolder      },
   { path: "/admin/product",      label: "Products",      icon: MdShoppingBag },
-  { path: "/admin/businesses",   label: "Businesses",    icon: MdBusiness    },
-  { path: "/admin/user",         label: "Users",         icon: MdPerson      },
+  { path: "/admin/customers",    label: "Customers",     icon: MdPeople      },
   { path: "/admin/orders",       label: "Orders",        icon: MdShoppingCart},
   { path: "/admin/return-orders",label: "Return Orders", icon: MdRefresh     },
+  { path: "/admin/delivery-partners", label: "Delivery App", icon: MdTwoWheeler },
 ];
 
 const Sidebar = () => {

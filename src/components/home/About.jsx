@@ -169,7 +169,7 @@ export default function About() {
   );
 
   return (
-    <div className="bg-green-50 min-h-screen mt-16">
+    <div className="bg-green-50 min-h-screen">
       {/* Hero Section */}
       <div className="text-white py-20 px-4" style={{ background: '#702834' }}>
         <div className="max-w-4xl mx-auto text-center">

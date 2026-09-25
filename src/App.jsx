@@ -57,17 +57,17 @@ import Dashboard from "./components/admin/Dashboard";
 import Banner from "./components/admin/BannerPage";
 import Aboutman from "./components/admin/Aboutman";
 import Leadershi from "./components/admin/Leadershi";
-import Startkyc from "./components/admin/Startkyc";
+
 import LogoAdmin from "./components/admin/LogoAdmin";
 import Category from "./components/admin/Category";
 import SubCategory from "./components/admin/Subcategory";
 import Product from "./components/admin/Product";
 import Ecosystem from "./components/admin/Ecosystem";
-import Businesses from "./components/admin/Businesses";
-import User from "./components/admin/User";
+import Customers from "./components/admin/Customers";
 import AddressAdmin from "./components/admin/AddressAdmin";
 import ReturnOrders from "./components/admin/ReturnOrders";
 import Orders from "./components/admin/Orders";
+import DeliveryPartners from "./components/admin/DeliveryPartners";
 
 function AppContent() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -115,7 +115,7 @@ function AppContent() {
           <Header />
         ))}
 
-      <main className="flex-grow">
+      <main className={`flex-grow ${!isAdminRoute ? 'pt-20' : ''}`}>
         <Routes>
           {/* Public Routes */}
 
@@ -216,17 +216,16 @@ function AppContent() {
             <Route path="banner" element={<Banner />} />
             <Route path="aboutman" element={<Aboutman />} />
             <Route path="leadershi" element={<Leadershi />} />
-            <Route path="startkyc" element={<Startkyc />} />
             <Route path="logo" element={<LogoAdmin />} />
             <Route path="category" element={<Category />} />
             <Route path="subcategory" element={<SubCategory />} />
             <Route path="product" element={<Product />} />
             <Route path="ecosystem" element={<Ecosystem />} />
-            <Route path="businesses" element={<Businesses />} />
+            <Route path="customers" element={<Customers />} />
             <Route path="return-orders" element={<ReturnOrders />} />
             <Route path="orders" element={<Orders />} />
-            <Route path="user" element={<User />} />
             <Route path="address" element={<AddressAdmin />} />
+            <Route path="delivery-partners" element={<DeliveryPartners />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

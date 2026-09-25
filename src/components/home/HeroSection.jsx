@@ -80,7 +80,7 @@ const HeroSection = () => {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-persian-green mt-16">
+      <div className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-persian-green">
         <div className="absolute inset-0 bg-black/30 z-10 flex items-center justify-center">
           <div className="z-20 text-center px-4 text-white">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -92,7 +92,7 @@ const HeroSection = () => {
   }
 
   return (
-    <div className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-persian-green mt-16">
+    <div className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-persian-green">
       {/* Mobile Layout */}
       <div className="md:hidden absolute inset-0 grid grid-cols-2 gap-2 p-2 z-0 overflow-y-auto">
         {imageUrls.map((url, index) => (

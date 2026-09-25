@@ -1,140 +1,47 @@
-import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect, useState } from "react";
 import { useAdmin } from "../context/AdminContext";
+import { MdVisibility, MdClose, MdTwoWheeler } from "react-icons/md";
 
-const ORDER_STATUS_OPTIONS = [
- 
-  { value: "processing",       label: "Processing",       badge: "status-badge-processing",   dot: "status-dot-processing",   cardBg: "bg-yellow-500"  },
-  { value: "in-transit",       label: "In Transit",       badge: "status-badge-in-transit",   dot: "status-dot-in-transit",   cardBg: "bg-blue-300"    },
-  { value: "out-for-delivery", label: "Out for Delivery", badge: "status-badge-out-delivery",  dot: "status-dot-out-delivery", cardBg: "bg-orange-300"  },
-  { value: "delivered",        label: "Delivered",        badge: "status-badge-delivered",    dot: "status-dot-delivered",    cardBg: "bg-green-600"   },
-  { value: "rejected",         label: "Rejected",         badge: "status-badge-rejected",     dot: "status-dot-rejected",     cardBg: "bg-red-600"     },
-];
-
-const getOption = (status) =>
-  ORDER_STATUS_OPTIONS.find((o) => o.value === status) || {
-    value: status,
-    label: status || "—",
-    badge: "status-badge-default",
-    dot: "status-dot-default",
-  };
-
-// ── Inline status cell ────────────────────────────────────────────────────────
-const StatusCell = ({ order, token, onUpdated }) => {
-  const [open, setOpen]               = useState(false);
-  const [saving, setSaving]           = useState(false);
-  const [localStatus, setLocalStatus] = useState(order.status);
-  const prevStatusRef                 = useRef(order.status);
-  const ref                           = useRef(null);
-
-  // keep in sync if parent re-renders with new status
-  useEffect(() => {
-    setLocalStatus(order.status);
-    prevStatusRef.current = order.status;
-  }, [order.status]);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleSelect = async (newStatus) => {
-    if (newStatus === localStatus || saving) { setOpen(false); return; }
-    setOpen(false);
-    const previous = prevStatusRef.current;
-    prevStatusRef.current = newStatus;
-    setLocalStatus(newStatus);   // optimistic — badge updates instantly
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/orders/admin/${order._id}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        onUpdated(order._id, newStatus); // updates parent array → stats recount
-      } else {
-        prevStatusRef.current = previous;
-        setLocalStatus(previous); // revert
-      }
-    } catch {
-      prevStatusRef.current = previous;
-      setLocalStatus(previous); // revert
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const current = getOption(localStatus);
-
-  return (
-    <div ref={ref} className="relative inline-block">
-      {/* Badge button */}
-      <button
-        onClick={() => !saving && setOpen((v) => !v)}
-        title="Click to change status"
-        className={`${current.badge} inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition hover:opacity-90 active:scale-95`}
-      >
-        {saving && (
-          <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-        )}
-        {current.label}
-        <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/>
-        </svg>
-      </button>
-
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute z-50 mt-1.5 left-0 bg-white rounded-xl py-1.5 min-w-[210px]"
-          style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.15)" }}>
-          <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Change Status
-          </p>
-          {ORDER_STATUS_OPTIONS.map((opt) => {
-            const isActive = opt.value === localStatus;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => handleSelect(opt.value)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 transition hover:bg-gray-50 ${isActive ? "bg-gray-50" : ""}`}
-              >
-                <span className={`${opt.dot} w-2.5 h-2.5 rounded-full shrink-0`} />
-                <span className={`${opt.badge} px-3 py-0.5 rounded-full text-xs font-semibold`}>
-                  {opt.label}
-                </span>
-                {isActive && (
-                  <svg className="ml-auto w-3.5 h-3.5 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+// Status is driven by the delivery partner's actions — read-only in admin.
+const DELIVERY_STATUS = {
+  placed: { label: "Processing", cls: "bg-yellow-100 text-yellow-800", cardBg: "bg-yellow-500" },
+  accepted: { label: "In Transit", cls: "bg-blue-100 text-blue-800", cardBg: "bg-blue-300" },
+  out_for_delivery: { label: "Out for Delivery", cls: "bg-orange-100 text-orange-800", cardBg: "bg-orange-300" },
+  delivered: { label: "Delivered", cls: "bg-green-100 text-green-800", cardBg: "bg-green-600" },
+  undelivered: { label: "Undelivered", cls: "bg-red-100 text-red-800", cardBg: "bg-red-600" },
 };
 
-// ── Main Component ────────────────────────────────────────────────────────────
+const STAT_CARDS = [
+  { key: "placed", label: "Processing", cardBg: "bg-yellow-500" },
+  { key: "accepted", label: "In Transit", cardBg: "bg-blue-300" },
+  { key: "out_for_delivery", label: "Out for Delivery", cardBg: "bg-orange-300" },
+  { key: "delivered", label: "Delivered", cardBg: "bg-green-600" },
+  { key: "undelivered", label: "Undelivered", cardBg: "bg-red-600" },
+];
+
+const PAGE_SIZE = 10;
+
+const effStatus = (o) => o.deliveryStatus || "placed";
+const statusMeta = (o) => DELIVERY_STATUS[effStatus(o)] || DELIVERY_STATUS.placed;
+
+const getImageUrl = (image) => {
+  if (!image) return null;
+  if (image.startsWith("http")) {
+    try { return new URL(image).pathname; } catch { return image; }
+  }
+  if (!image.startsWith("/")) return `/${image}`;
+  return image;
+};
+
 const Orders = () => {
   const { token } = useAdmin();
-  const [orders, setOrders]             = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState(null);
-  const [search, setSearch]             = useState("");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [page, setPage] = useState(1);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => { if (token) fetchOrders(); }, [token]);
 
@@ -142,7 +49,7 @@ const Orders = () => {
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch("/api/orders/admin/all", {
+      const res = await fetch("/api/orders/admin/all", {
         headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-store" },
       });
       const data = await res.json();
@@ -155,37 +62,33 @@ const Orders = () => {
     }
   };
 
-  // Instantly update badge in the table after API success
-  const handleUpdated = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
-    );
-  };
-
-  const getImageUrl = (image) => {
-    if (!image) return null;
-    if (image.startsWith("http")) { try { return new URL(image).pathname; } catch { return image; } }
-    if (!image.startsWith("/")) return `/${image}`;
-    return image;
-  };
-
   const filtered = orders.filter((order) => {
     const name = order.user?.userDetails?.fullName || order.user?.phone || "";
     const matchSearch =
       search === "" ||
       (order.orderId || "").toLowerCase().includes(search.toLowerCase()) ||
       name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "all" || order.status === filterStatus;
+    const matchStatus = filterStatus === "all" || effStatus(order) === filterStatus;
     return matchSearch && matchStatus;
   });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [search, filterStatus]);
+
   return (
     <div className="p-6">
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
-        <p className="text-sm text-gray-500 mt-1">Track and manage all customer orders.</p>
-      </div>
-      <div className="flex justify-end mb-6">
+      <div className="mb-6 pb-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Live order status, updated automatically by the delivery partner.
+          </p>
+        </div>
         <button
           onClick={fetchOrders}
           className="flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors"
@@ -193,23 +96,18 @@ const Orders = () => {
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#5a1f29")}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#702834")}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
           Refresh
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-6">
-        {ORDER_STATUS_OPTIONS.map(({ value, label, badge, cardBg }) => (
-          <div key={value} className={`${cardBg} rounded-lg shadow-sm border p-3 text-center`}>
-            <p className="text-2xl font-bold text-gray-800">
-              {orders.filter((o) => o.status === value).length}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        {STAT_CARDS.map(({ key, label, cardBg }) => (
+          <div key={key} className={`${cardBg} rounded-lg shadow-sm p-3 text-center`}>
+            <p className="text-2xl font-bold text-white">
+              {orders.filter((o) => effStatus(o) === key).length}
             </p>
-            <span className={`${badge} text-xs font-semibold mt-1 px-2 py-0.5 rounded-full inline-block`}>
-              {label}
-            </span>
+            <span className="text-xs font-semibold mt-1 text-white/90 inline-block">{label}</span>
           </div>
         ))}
       </div>
@@ -229,114 +127,227 @@ const Orders = () => {
           className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Statuses</option>
-          {ORDER_STATUS_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
+          {STAT_CARDS.map(({ key, label }) => (
+            <option key={key} value={key}>{label}</option>
           ))}
         </select>
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-16 text-gray-500">
-          <svg className="animate-spin w-8 h-8 mx-auto mb-3 text-blue-500" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-          Loading orders...
-        </div>
+        <div className="text-center py-16 text-gray-500">Loading orders...</div>
       ) : error ? (
         <div className="text-center py-8 text-red-500 bg-red-50 rounded-lg">{error}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-8 text-gray-400">No orders found.</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl shadow">
-          <table className="min-w-full bg-white divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Order ID", "Customer", "Items", "Delivery Address", "Payment", "Subtotal", "GST", "Total", "Status", "Created At"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((order) => (
-                <tr key={order._id} className="hover:bg-gray-50 transition-colors">
-                  {/* Order ID */}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-mono text-sm font-semibold text-blue-700">{order.orderId}</span>
-                  </td>
-
-                  {/* Customer */}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-800">
-                      {order.user?.userDetails?.fullName || "—"}
-                    </div>
-                    <div className="text-xs text-gray-400">{order.user?.phone || ""}</div>
-                  </td>
-
-                  {/* Items */}
-                  <td className="px-4 py-3">
-                    <ul className="space-y-1">
-                      {order.items.map((item) => (
-                        <li key={item._id} className="flex items-center gap-2">
-                          {getImageUrl(item.image) ? (
-                            <img
-                              src={getImageUrl(item.image)}
-                              alt={item.name}
-                              className="w-8 h-8 rounded object-cover border"
-                              onError={(e) => (e.target.style.display = "none")}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded border bg-gray-100 flex items-center justify-center text-gray-400 text-xs">?</div>
-                          )}
-                          <span className="text-sm text-gray-700">{item.name}</span>
-                          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">×{item.quantity}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-
-                  {/* Address */}
-                  <td className="px-4 py-3 text-xs text-gray-600 max-w-[160px] whitespace-pre-wrap">
-                    {order.deliveryAddress}
-                  </td>
-
-                  {/* Payment */}
-                  <td className="px-4 py-3 whitespace-nowrap text-sm capitalize text-gray-700">
-                    {order.paymentMethod}
-                  </td>
-
-                  {/* Subtotal */}
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">₹{order.subtotal}</td>
-
-                  {/* GST */}
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">₹{order.gst}</td>
-
-                  {/* Total */}
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">₹{order.total}</td>
-
-                  {/* Status — click badge → inline dropdown */}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <StatusCell order={order} token={token} onUpdated={handleUpdated} />
-                  </td>
-
-                  {/* Created At */}
-                  <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
-                    {new Date(order.createdAt).toLocaleString()}
-                  </td>
+        <>
+          <div className="overflow-x-auto rounded-xl shadow">
+            <table className="min-w-full bg-white divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["Order ID", "Customer", "Items", "Total", "Delivery Partner", "Status", "Created At", ""].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pageRows.map((order) => {
+                  const meta = statusMeta(order);
+                  return (
+                    <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="font-mono text-sm font-semibold text-blue-700">{order.orderId}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-800">
+                          {order.user?.userDetails?.fullName || order.addressName || "—"}
+                        </div>
+                        <div className="text-xs text-gray-400">{order.user?.phone || ""}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {order.items?.[0]?.name}
+                        {order.items?.length > 1 && (
+                          <span className="text-xs text-gray-400"> +{order.items.length - 1}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">₹{order.total}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {order.deliveryPartner ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-800">{order.deliveryPartner.name}</div>
+                            <div className="text-xs text-gray-400">{order.deliveryPartner.driverId}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Not accepted yet</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${meta.cls}`}>
+                          {meta.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
+                        {new Date(order.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <button
+                          onClick={() => setViewItem(order)}
+                          className="inline-flex items-center gap-1 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+                        >
+                          <MdVisibility className="text-base" /> View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-gray-400">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+              {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 disabled:opacity-40 hover:bg-gray-50"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => Math.abs(p - currentPage) <= 2 || p === 1 || p === totalPages)
+                .map((p, idx, arr) => (
+                  <React.Fragment key={p}>
+                    {idx > 0 && p - arr[idx - 1] > 1 && <span className="px-1 text-gray-400">…</span>}
+                    <button
+                      onClick={() => setPage(p)}
+                      className="w-9 h-9 rounded-lg text-sm font-medium border transition-colors"
+                      style={
+                        p === currentPage
+                          ? { backgroundColor: "#702834", color: "#fff", borderColor: "#702834" }
+                          : { borderColor: "#d1d5db", color: "#374151" }
+                      }
+                    >
+                      {p}
+                    </button>
+                  </React.Fragment>
+                ))}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 disabled:opacity-40 hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
-      {!loading && !error && (
-        <p className="mt-4 text-sm text-gray-400 text-right">
-          Showing {filtered.length} of {orders.length} orders
-        </p>
+      {/* View modal */}
+      {viewItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(0,0,0,0.25)" }}
+          onClick={() => setViewItem(null)}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: "#702834" }}>
+              <h3 className="text-base font-bold text-white">Order {viewItem.orderId}</h3>
+              <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 text-white">
+                <MdClose />
+              </button>
+            </div>
+            <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusMeta(viewItem).cls}`}>
+                  {statusMeta(viewItem).label}
+                </span>
+                <span className="text-lg font-extrabold" style={{ color: "#702834" }}>₹{viewItem.total}</span>
+              </div>
+
+              {/* Customer */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Customer</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {viewItem.user?.userDetails?.fullName || viewItem.addressName || "—"}
+                </p>
+                <p className="text-xs text-gray-500">{viewItem.addressContact || viewItem.user?.phone}</p>
+                <p className="text-sm text-gray-600 mt-1">{viewItem.deliveryAddress}</p>
+              </div>
+
+              {/* Delivery partner */}
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1">
+                  <MdTwoWheeler /> Delivery Partner
+                </p>
+                {viewItem.deliveryPartner ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-800">{viewItem.deliveryPartner.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {viewItem.deliveryPartner.driverId} · {viewItem.deliveryPartner.phone}
+                    </p>
+                    {viewItem.acceptedAt && (
+                      <p className="text-xs text-gray-400">Accepted: {new Date(viewItem.acceptedAt).toLocaleString()}</p>
+                    )}
+                    {viewItem.deliveredAt && (
+                      <p className="text-xs text-gray-400">Delivered: {new Date(viewItem.deliveredAt).toLocaleString()}</p>
+                    )}
+                    {viewItem.deliveryRemarks && (
+                      <p className="text-xs text-red-500">Remarks: {viewItem.deliveryRemarks}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No partner has accepted this order yet.</p>
+                )}
+              </div>
+
+              {/* Items */}
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  Items ({viewItem.items?.length || 0})
+                </p>
+                <div className="space-y-2">
+                  {viewItem.items?.map((item) => (
+                    <div key={item._id} className="flex items-center gap-3">
+                      {getImageUrl(item.image) ? (
+                        <img src={getImageUrl(item.image)} alt={item.name} className="w-10 h-10 rounded object-cover border" onError={(e) => (e.target.style.display = "none")} />
+                      ) : (
+                        <div className="w-10 h-10 rounded border bg-gray-100" />
+                      )}
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-800">{item.name}</p>
+                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">₹{(item.price || 0) * (item.quantity || 1)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment */}
+              <div className="border-t border-gray-100 pt-4 flex justify-between text-sm">
+                <span className="text-gray-500">Payment</span>
+                <span className="font-medium text-gray-800 capitalize">
+                  {viewItem.paymentMethod === "cod" ? "Cash on Delivery" : viewItem.paymentMethod}
+                </span>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -7,40 +7,40 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       // Proxy uploaded images — must match the folders multer saves to
       '/categories': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/subcategories': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/products': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/founders': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/team': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/banners': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/trading': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
       '/business': {
-        target: 'http://localhost:1083',
+        target: 'https://sangamwholesale.com',
         changeOrigin: true,
       },
     },

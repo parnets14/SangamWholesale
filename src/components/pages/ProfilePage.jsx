@@ -19,12 +19,29 @@ import {
   FileText,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
   // Use AuthContext for user and token
   const { user: authUser, token } = useAuth();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
+
+  // Re-add every item from a past order to the cart, then go to the cart.
+  const handleBuyAgain = (order) => {
+    if (!order?.items?.length) return;
+    order.items.forEach((item) => {
+      addToCart({
+        _id: item.productId,
+        name: item.name,
+        price: item.price,
+        image: item.rawImage,
+        quantity: item.quantity || 1,
+      });
+    });
+    navigate("/cart");
+  };
 
   // User Profile State
   const [user, setUser] = useState({
@@ -183,25 +200,34 @@ const ProfilePage = () => {
         const data = await response.json();
         if (data.success && data.orders) {
           setOrders(
-            data.orders.map((order) => ({
-              id: order._id,
-              orderId: order.orderId,
-              date: order.createdAt,
-              total: order.total,
-              status: getDeliveryStatus(order.status),
-              items: order.items.map((item) => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.price,
-                image: item.image
-                  ? `https://sangamwholesale.com/${item.image}`
-                  : PLACEHOLDER_IMAGE,
-              })),
-              deliveryAddress: order.deliveryAddress,
-              trackingId: `TRK${order.orderId}`,
-              statusColor: getStatusColor(order.status),
-              progress: getProgress(order.status),
-            }))
+            data.orders.map((order) => {
+              // Prefer the live delivery-partner status when present.
+              const effStatus = order.deliveryStatus || order.status;
+              return {
+                id: order._id,
+                orderId: order.orderId,
+                date: order.createdAt,
+                total: order.total,
+                status: getDeliveryStatus(effStatus),
+                deliveryStatus: order.deliveryStatus,
+                deliveryOtp: order.deliveryOtp,
+                deliveryPartnerName: order.deliveryPartner?.name || null,
+                items: order.items.map((item) => ({
+                  productId: item.productId || item._id,
+                  rawImage: item.image || "",
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  image: item.image
+                    ? `https://sangamwholesale.com/${item.image}`
+                    : PLACEHOLDER_IMAGE,
+                })),
+                deliveryAddress: order.deliveryAddress,
+                trackingId: `TRK${order.orderId}`,
+                statusColor: getStatusColor(effStatus),
+                progress: getProgress(effStatus),
+              };
+            })
           );
         } else {
           setOrdersError(data.message || "Failed to load orders");
@@ -220,17 +246,75 @@ const ProfilePage = () => {
     }
   }, [token]);
 
+  // Live refresh: re-fetch orders every 15s so delivery status + OTP update
+  // without the customer having to reload the page.
+  useEffect(() => {
+    if (!token) return;
+    const refresh = async () => {
+      try {
+        const response = await fetch("https://sangamwholesale.com/api/orders/", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        if (data.success && data.orders) {
+          setOrders(
+            data.orders.map((order) => {
+              const effStatus = order.deliveryStatus || order.status;
+              return {
+                id: order._id,
+                orderId: order.orderId,
+                date: order.createdAt,
+                total: order.total,
+                status: getDeliveryStatus(effStatus),
+                deliveryStatus: order.deliveryStatus,
+                deliveryOtp: order.deliveryOtp,
+                deliveryPartnerName: order.deliveryPartner?.name || null,
+                items: order.items.map((item) => ({
+                  productId: item.productId || item._id,
+                  rawImage: item.image || "",
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                  image: item.image
+                    ? `https://sangamwholesale.com/${item.image}`
+                    : PLACEHOLDER_IMAGE,
+                })),
+                deliveryAddress: order.deliveryAddress,
+                trackingId: `TRK${order.orderId}`,
+                statusColor: getStatusColor(effStatus),
+                progress: getProgress(effStatus),
+              };
+            })
+          );
+        }
+      } catch (e) {
+        // silent — keep showing last known orders
+      }
+    };
+    const id = setInterval(refresh, 15000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   // Helper functions for orders
   const getDeliveryStatus = (apiStatus) => {
     switch (apiStatus?.toLowerCase()) {
+      case "placed":
       case "pending":
         return "Processing";
+      case "accepted":
       case "confirmed":
         return "In Transit";
+      case "out_for_delivery":
       case "shipped":
         return "Out for Delivery";
       case "delivered":
         return "Delivered";
+      case "undelivered":
       case "cancelled":
         return "Cancelled";
       default:
@@ -240,14 +324,18 @@ const ProfilePage = () => {
 
   const getStatusColor = (apiStatus) => {
     switch (apiStatus?.toLowerCase()) {
+      case "placed":
       case "pending":
         return "#bd1b13";
+      case "accepted":
       case "confirmed":
         return "#F59E0B";
+      case "out_for_delivery":
       case "shipped":
         return "#8B5CF6";
       case "delivered":
         return "#10B981";
+      case "undelivered":
       case "cancelled":
         return "#EF4444";
       default:
@@ -257,14 +345,18 @@ const ProfilePage = () => {
 
   const getProgress = (apiStatus) => {
     switch (apiStatus?.toLowerCase()) {
+      case "placed":
       case "pending":
         return 25;
+      case "accepted":
       case "confirmed":
-        return 50;
+        return 55;
+      case "out_for_delivery":
       case "shipped":
         return 85;
       case "delivered":
         return 100;
+      case "undelivered":
       case "cancelled":
         return 0;
       default:
@@ -1082,6 +1174,11 @@ const ProfilePage = () => {
                       day: "numeric",
                     })}
                   </p>
+                  {order.deliveryPartnerName && (
+                    <p className="text-sm mt-1 font-medium" style={{ color: "#702834" }}>
+                      🛵 Delivery partner: {order.deliveryPartnerName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center">
                   {order.status === "Delivered" && (
@@ -1145,6 +1242,27 @@ const ProfilePage = () => {
               </div>
             </div>
             <div className="p-5">
+              {/* Delivery OTP — shown while the partner is out for delivery */}
+              {order.deliveryStatus === "out_for_delivery" &&
+                order.deliveryOtp && (
+                  <div
+                    className="mb-4 rounded-xl border p-4 text-center"
+                    style={{ backgroundColor: "#7028340D", borderColor: "#70283433" }}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#702834" }}>
+                      Delivery OTP
+                    </p>
+                    <p
+                      className="text-3xl font-extrabold tracking-[0.3em] my-1"
+                      style={{ color: "#702834" }}
+                    >
+                      {order.deliveryOtp}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Share this OTP with the delivery partner to confirm your delivery.
+                    </p>
+                  </div>
+                )}
               <div className="space-y-4">
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-start">
@@ -1194,10 +1312,12 @@ const ProfilePage = () => {
                   >
                     Track Order
                   </motion.button>
-                  {order.status === "Delivered" && (
+                  {(order.status === "Delivered" ||
+                    order.status === "Cancelled") && (
                     <motion.button
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
+                      onClick={() => handleBuyAgain(order)}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                     >
                       Buy Again
@@ -1233,7 +1353,7 @@ const ProfilePage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 mt-16">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

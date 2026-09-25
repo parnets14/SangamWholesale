@@ -85,7 +85,7 @@ export default function DownloadPage() {
   };
 
   return (
-    <div className="bg-white min-h-screen mt-20">
+    <div className="bg-white min-h-screen">
       {/* Hero */}
       <div
         className="text-white py-20 px-6 text-center"
