@@ -29,7 +29,7 @@ const AppDownloadSection = () => {
             }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            Download <span className="text-red-200">Ubook</span> App Now!
+            Download <span className="text-red-200">Sangam Wholesale</span> App Now!
           </motion.h2>
           
           <motion.p 
@@ -49,7 +49,7 @@ const AppDownloadSection = () => {
             transition={{ delay: 0.8 }}
           >
             <motion.a
-              href="https://apps.apple.com/app/idYOUR_APP_ID"
+              href="https://apps.apple.com/us/app/sangam-wholesale/id6797504951"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-white/20 hover:border-white/50 transition-all"
@@ -68,7 +68,7 @@ const AppDownloadSection = () => {
             </motion.a>
 
             <motion.a
-              href="https://play.google.com/store/apps/details?id=YOUR_APP_PACKAGE"
+              href="https://play.google.com/store/apps/details?id=com.sangamwholesale"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-white/20 hover:border-white/50 transition-all"

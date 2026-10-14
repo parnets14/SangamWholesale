@@ -6,6 +6,25 @@ import { MdDeleteOutline, MdVisibility, MdTwoWheeler, MdClose } from "react-icon
 const API_URL = "https://sangamwholesale.com/api/admin/drivers";
 const DOC_BASE = "https://sangamwholesale.com/driverDocs";
 
+// ── Pagination helpers ─────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
+
+// Build a compact page list, e.g. 1 … 4 5 6 … 20
+const getPageNumbers = (current, total) => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const wanted = [...new Set([1, total, current - 1, current, current + 1])]
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const out = [];
+  let prev = 0;
+  wanted.forEach((p) => {
+    if (prev && p - prev > 1) out.push("…");
+    out.push(p);
+    prev = p;
+  });
+  return out;
+};
+
 const DeliveryPartners = () => {
   const { token } = useAdmin();
   const [drivers, setDrivers] = useState([]);
@@ -14,6 +33,7 @@ const DeliveryPartners = () => {
   const [viewItem, setViewItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -62,6 +82,12 @@ const DeliveryPartners = () => {
       .slice(0, 2)
       .join("")
       .toUpperCase();
+
+  // Pagination — clamp the page so deleting partners can never strand us on an empty page
+  const totalPages = Math.max(1, Math.ceil(drivers.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedRows = drivers.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <div className="p-6">
@@ -121,7 +147,7 @@ const DeliveryPartners = () => {
                 </td>
               </tr>
             ) : (
-              drivers.map((d) => (
+              pagedRows.map((d) => (
                 <tr key={d._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
@@ -178,6 +204,68 @@ const DeliveryPartners = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {!loading && !error && drivers.length > 0 && (
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-5 px-1">
+          <p className="text-sm text-gray-500">
+            Showing{" "}
+            <span className="font-semibold text-gray-700">{startIndex + 1}</span>–
+            <span className="font-semibold text-gray-700">
+              {Math.min(startIndex + PAGE_SIZE, drivers.length)}
+            </span>{" "}
+            of <span className="font-semibold text-gray-700">{drivers.length}</span>{" "}
+            partner{drivers.length !== 1 ? "s" : ""}
+          </p>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage === 1}
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Prev
+              </button>
+
+              {getPageNumbers(safePage, totalPages).map((n, i) =>
+                n === "…" ? (
+                  <span key={`gap-${i}`} className="px-1.5 text-sm text-gray-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className="min-w-[36px] px-2.5 py-1.5 rounded-lg border text-sm font-semibold transition-colors"
+                    style={
+                      n === safePage
+                        ? { backgroundColor: "#702834", borderColor: "#702834", color: "#fff" }
+                        : { borderColor: "#e5e7eb", color: "#4b5563", backgroundColor: "#fff" }
+                    }
+                    onMouseEnter={(e) => {
+                      if (n !== safePage) e.currentTarget.style.backgroundColor = "#fdf6f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (n !== safePage) e.currentTarget.style.backgroundColor = "#fff";
+                    }}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage === totalPages}
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* View Modal */}
       {viewItem && (

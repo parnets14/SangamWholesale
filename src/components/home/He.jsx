@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Star, Truck, ShoppingBag, CreditCard, RefreshCw } from 'lucide-react';
+import { Star, Truck, ShoppingBag, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const He = () => {
@@ -27,13 +27,6 @@ const He = () => {
       title: "Wide range from leading National & Regional brands",
       description: "Shop from 25,000 top sellers across India",
       color: "text-sky-600",
-      bgColor: "bg-gray-100"
-    },
-    {
-      icon: CreditCard,
-      title: "Credit upto ₹5 Lakhs",
-      description: "Avail credit facility upto ₹5 Lakhs",
-      color: "text-cyan-600",
       bgColor: "bg-gray-100"
     },
     {
@@ -120,7 +113,7 @@ const He = () => {
             transition={{ duration: 0.6 }}
           >
             <div className="font-semibold text-sm mb-8 tracking-wider uppercase" style={{ color: '#702834' }}>
-              Welcome to UBook
+              Welcome to Sangam Wholesale
             </div>
             <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-16 text-gray-900">
               Buy stocks for your <br />

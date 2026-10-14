@@ -91,14 +91,14 @@ export default function About() {
             <img
               src={getImageUrl(profile.image)}
               alt={profile.name}
-              className="w-32 h-32 object-cover rounded-full border-4 border-green-100 shadow-md transition-transform duration-300 hover:scale-105"
+              className="w-32 h-32 object-cover rounded-full border-4 border-[#f3dde1] shadow-md transition-transform duration-300 hover:scale-105"
               onError={(e) => {
                 e.target.src = "/kyc.avif"; // fallback image
               }}
             />
           </div>
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-green-800 mb-2">
+            <h3 className="text-2xl font-bold text-[#702834] mb-2">
               {profile.name}
             </h3>
             <p className="text-gray-600 mb-4 whitespace-pre-wrap">
@@ -107,7 +107,7 @@ export default function About() {
             {bio.length > 300 && (
               <button
                 onClick={() => toggleBioExpansion(index, type)}
-                className="text-green-600 hover:text-green-800 transition-colors flex items-center font-medium"
+                className="text-[#702834] hover:text-[#5a1f29] transition-colors flex items-center font-medium"
               >
                 {isExpanded ? "Show Less" : "Read More"}
                 {isExpanded ? (
@@ -125,13 +125,13 @@ export default function About() {
 
   const renderSection = (title, data, loading, error, retryFunction, type) => (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-center text-green-800 mb-12">
+      <h2 className="text-3xl font-bold text-center text-[#702834] mb-12">
         {title}
       </h2>
 
       {loading && (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#702834]"></div>
           <p className="mt-4 text-gray-600">Loading {title.toLowerCase()}...</p>
         </div>
       )}
@@ -169,15 +169,15 @@ export default function About() {
   );
 
   return (
-    <div className="bg-green-50 min-h-screen">
+    <div className="bg-[#fdf6f7] min-h-screen">
       {/* Hero Section */}
       <div className="text-white py-20 px-4" style={{ background: '#702834' }}>
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 transform transition-all duration-500 hover:scale-105">
-            Transforming Ubook Distribution
+            Transforming Wholesale Distribution
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-green-100">
-            Empowering Bookstores, Publishers, and Readers Through Technology
+          <p className="text-xl md:text-2xl mb-8 text-[#f3dde1]">
+            Empowering Retailers and Brands Across India Through Technology
           </p>
         </div>
       </div>
@@ -185,25 +185,25 @@ export default function About() {
       {/* Company Overview */}
       <div className="max-w-4xl mx-auto py-16 px-4">
         <div className="bg-white shadow-xl rounded-xl p-8 text-center transform transition-all duration-300 hover:shadow-2xl">
-          <h2 className="text-3xl font-bold text-green-800 mb-6">
+          <h2 className="text-3xl font-bold text-[#702834] mb-6">
             Our Mission
           </h2>
           <p className="text-gray-700 text-lg leading-relaxed">
-            At uBook, we are reimagining the traditional book supply chain. By
-            combining technology, data-driven logistics, and intelligent
-            procurement, we make book sourcing simpler, faster, and more
-            cost-effective for every stakeholder in the publishing ecosystem.
+            At Sangam Wholesale, we are reimagining the traditional wholesale
+            supply chain. By combining technology, data-driven logistics, and
+            intelligent procurement, we make stock sourcing simpler, faster, and
+            more cost-effective for every stakeholder in the retail ecosystem.
             <br />
             <br />
-            uBook was founded with a clear mission: to transform the way books
-            are distributed, accessed, and sold across India by empowering small
-            bookstores, educators, and independent publishers through
-            technology.
+            Sangam Wholesale was founded with a clear mission: to transform the
+            way goods are distributed, accessed, and sold across India by
+            empowering small retailers, local shops, and independent
+            businesses through technology.
             <br />
             <br />
-            As India's leading B2B book distribution platform, uBook connects
-            thousands of retailers, libraries, schools, and institutions with
-            top publishers and distributors — all through a single, seamless
+            As India's leading B2B wholesale platform, Sangam Wholesale connects
+            thousands of retailers, local shops, and institutions with top
+            national and regional brands — all through a single, seamless
             digital ecosystem.
           </p>
         </div>
@@ -222,7 +222,7 @@ export default function About() {
       </div>
 
       {/* Team Section */}
-      <div className="bg-green-50 py-16 px-4">
+      <div className="bg-[#fdf6f7] py-16 px-4">
         {renderSection(
           "Our Team",
           leaders,
@@ -236,44 +236,44 @@ export default function About() {
       {/* Values Section */}
       <div className="bg-white py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-green-800 mb-12">
+          <h2 className="text-3xl font-bold text-center text-[#702834] mb-12">
             Our Values
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-green-50 rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <div className="bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center p-6 bg-[#fdf6f7] rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <div className="bg-[#702834] text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UserCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-2">
+              <h3 className="text-xl font-bold text-[#702834] mb-2">
                 Innovation
               </h3>
               <p className="text-gray-600">
                 Continuously pushing boundaries to create better solutions for
-                the book distribution ecosystem.
+                the retail and wholesale distribution ecosystem.
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <div className="bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center p-6 bg-[#fdf6f7] rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <div className="bg-[#702834] text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UserCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-2">
+              <h3 className="text-xl font-bold text-[#702834] mb-2">
                 Accessibility
               </h3>
               <p className="text-gray-600">
-                Making books and education accessible to everyone, everywhere in
-                India.
+                Making quality products, better margins, and reliable supply
+                accessible to every retailer, everywhere in India.
               </p>
             </div>
-            <div className="text-center p-6 bg-green-50 rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <div className="bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center p-6 bg-[#fdf6f7] rounded-xl transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <div className="bg-[#702834] text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UserCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-2">
+              <h3 className="text-xl font-bold text-[#702834] mb-2">
                 Partnership
               </h3>
               <p className="text-gray-600">
-                Building strong relationships with bookstores, publishers, and
-                educational institutions.
+                Building strong relationships with retailers, brands, and
+                distributors across the country.
               </p>
             </div>
           </div>

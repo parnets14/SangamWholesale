@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { PLACEHOLDER_IMAGE } from "../../utils/placeholderImage";
 
-const Aboutman = () => {
-  const [founders, setFounders] = useState([]);
+const Leadership = () => {
+  const [members, setMembers] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [viewItem, setViewItem] = useState(null);
   const [currentItem, setCurrentItem] = useState(null);
@@ -20,18 +20,18 @@ const Aboutman = () => {
   const getToken = () => localStorage.getItem("adminToken");
 
   useEffect(() => {
-    fetchFounders();
+    fetchMembers();
   }, []);
 
-  const fetchFounders = async () => {
+  const fetchMembers = async () => {
     try {
       setLoading(true);
       const response = await fetch(API_BASE_URL, { cache: "no-store" });
       if (response.ok) {
         const data = await response.json();
-        setFounders(data);
+        setMembers(data);
       } else {
-        setError("Failed to fetch founders");
+        setError("Failed to fetch team members");
       }
     } catch (error) {
       setError("Error connecting to server");
@@ -76,7 +76,7 @@ const Aboutman = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this founder?")) {
+    if (window.confirm("Are you sure you want to delete this team member?")) {
       try {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -84,12 +84,12 @@ const Aboutman = () => {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         if (response.ok) {
-          setFounders(founders.filter((item) => item._id !== id));
+          setMembers(members.filter((item) => item._id !== id));
         } else {
-          setError("Failed to delete founder");
+          setError("Failed to delete team member");
         }
       } catch (error) {
-        setError("Error deleting founder");
+        setError("Error deleting team member");
         console.error("Delete error:", error);
       } finally {
         setLoading(false);
@@ -102,21 +102,16 @@ const Aboutman = () => {
       setLoading(true);
       setError("");
 
-      if (!formData.name.trim() || !formData.description.trim()) {
-        setError("Name and description are required");
-        setLoading(false);
-        return;
-      }
-
-      if (!currentItem && !formData.image) {
-        setError("Image is required");
+      // Only the name is mandatory — description and image are optional
+      if (!formData.name.trim()) {
+        setError("Name is required");
         setLoading(false);
         return;
       }
 
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
-      formDataToSend.append("description", formData.description);
+      formDataToSend.append("description", formData.description || "");
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -133,18 +128,18 @@ const Aboutman = () => {
       if (response.ok) {
         const result = await response.json();
         if (currentItem) {
-          setFounders(founders.map((item) => item._id === currentItem._id ? result : item));
+          setMembers(members.map((item) => item._id === currentItem._id ? result : item));
         } else {
-          setFounders([result, ...founders]);
+          setMembers([result, ...members]);
         }
         setShowModal(false);
         setFormData({ name: "", description: "", image: null });
       } else {
         const errorData = await response.json();
-        setError(errorData.error || "Failed to save founder");
+        setError(errorData.error || "Failed to save team member");
       }
     } catch (error) {
-      setError("Error saving founder");
+      setError("Error saving team member");
       console.error("Save error:", error);
     } finally {
       setLoading(false);
@@ -200,14 +195,14 @@ const Aboutman = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {founders.length === 0 && !loading ? (
+              {members.length === 0 && !loading ? (
                 <tr>
                   <td colSpan="4" className="text-center py-6 text-gray-500">
-                    No founders found
+                    No team members found
                   </td>
                 </tr>
               ) : (
-                founders.map((item) => (
+                members.map((item) => (
                   <tr key={item._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <img
@@ -293,7 +288,7 @@ const Aboutman = () => {
           <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
-                {currentItem ? "Edit Founder" : "Add Founder"}
+                {currentItem ? "Edit Team Member" : "Add Team Member"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -315,7 +310,7 @@ const Aboutman = () => {
                 <input
                   type="text"
                   name="name"
-                  placeholder="Enter founder name"
+                  placeholder="Enter team member name"
                   value={formData.name}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -324,21 +319,20 @@ const Aboutman = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   name="description"
-                  placeholder="Enter founder description"
+                  placeholder="Enter team member description"
                   value={formData.description}
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image {!currentItem && "*"}
+                  Image
                 </label>
                 <input
                   type="file"
@@ -346,9 +340,6 @@ const Aboutman = () => {
                   onChange={handleImageUpload}
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {!currentItem && (
-                  <p className="text-xs text-gray-500 mt-1">Image is required for new member</p>
-                )}
               </div>
 
               {formData.image && (
@@ -398,4 +389,4 @@ const Aboutman = () => {
   );
 };
 
-export default Aboutman;
+export default Leadership;

@@ -102,21 +102,16 @@ const Aboutman = () => {
       setLoading(true);
       setError("");
 
-      if (!formData.name.trim() || !formData.description.trim()) {
-        setError("Name and description are required");
-        setLoading(false);
-        return;
-      }
-
-      if (!currentItem && !formData.image) {
-        setError("Image is required");
+      // Only the name is mandatory — description and image are optional
+      if (!formData.name.trim()) {
+        setError("Name is required");
         setLoading(false);
         return;
       }
 
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
-      formDataToSend.append("description", formData.description);
+      formDataToSend.append("description", formData.description || "");
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -331,7 +326,7 @@ const Aboutman = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   name="description"
                   placeholder="Enter founder description"
@@ -339,13 +334,12 @@ const Aboutman = () => {
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image {!currentItem && "*"}
+                  Image
                 </label>
                 <input
                   type="file"
@@ -353,9 +347,6 @@ const Aboutman = () => {
                   onChange={handleImageUpload}
                   className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {!currentItem && (
-                  <p className="text-xs text-gray-500 mt-1">Image is required for new founder</p>
-                )}
               </div>
 
               {formData.image && (

@@ -157,6 +157,25 @@ const StatusCell = ({ order, token, onUpdated }) => {
   );
 };
 
+// ── Pagination helpers ─────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
+
+// Build a compact page list, e.g. 1 … 4 5 6 … 20
+const getPageNumbers = (current, total) => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const wanted = [...new Set([1, total, current - 1, current, current + 1])]
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const out = [];
+  let prev = 0;
+  wanted.forEach((p) => {
+    if (prev && p - prev > 1) out.push("…");
+    out.push(p);
+    prev = p;
+  });
+  return out;
+};
+
 // ── Main Component ─────────────────────────────────────────────────────────
 const ReturnOrders = () => {
   const { token } = useAdmin();
@@ -165,6 +184,7 @@ const ReturnOrders = () => {
   const [error, setError]               = useState(null);
   const [search, setSearch]             = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [page, setPage]                 = useState(1);
 
   useEffect(() => {
     if (token) fetchReturnOrders();
@@ -209,6 +229,17 @@ const ReturnOrders = () => {
     const matchStatus = filterStatus === "all" || order.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  // Pagination — reset to page 1 whenever the search or status filter changes,
+  // and clamp so deleting/filtering can never strand us on an empty page.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedRows  = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus]);
 
   return (
     <div className="p-6">
@@ -292,7 +323,7 @@ const ReturnOrders = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((order) => (
+              {pagedRows.map((order) => (
                 <tr key={order._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="font-mono text-xs font-semibold text-blue-700">{order._id}</span>
@@ -342,10 +373,68 @@ const ReturnOrders = () => {
         </div>
       )}
 
-      {!loading && !error && (
-        <p className="mt-4 text-sm text-gray-400 text-right">
-          Showing {filtered.length} of {returnOrders.length} return orders
-        </p>
+      {!loading && !error && filtered.length > 0 && (
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-4">
+          <p className="text-sm text-gray-400">
+            Showing{" "}
+            <span className="font-semibold text-gray-600">{startIndex + 1}</span>–
+            <span className="font-semibold text-gray-600">
+              {Math.min(startIndex + PAGE_SIZE, filtered.length)}
+            </span>{" "}
+            of <span className="font-semibold text-gray-600">{filtered.length}</span>{" "}
+            return order{filtered.length !== 1 ? "s" : ""}
+            {filtered.length !== returnOrders.length && (
+              <span> (filtered from {returnOrders.length})</span>
+            )}
+          </p>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage === 1}
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Prev
+              </button>
+
+              {getPageNumbers(safePage, totalPages).map((n, i) =>
+                n === "…" ? (
+                  <span key={`gap-${i}`} className="px-1.5 text-sm text-gray-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className="min-w-[36px] px-2.5 py-1.5 rounded-lg border text-sm font-semibold transition-colors"
+                    style={
+                      n === safePage
+                        ? { backgroundColor: "#702834", borderColor: "#702834", color: "#fff" }
+                        : { borderColor: "#e5e7eb", color: "#4b5563", backgroundColor: "#fff" }
+                    }
+                    onMouseEnter={(e) => {
+                      if (n !== safePage) e.currentTarget.style.backgroundColor = "#fdf6f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (n !== safePage) e.currentTarget.style.backgroundColor = "#fff";
+                    }}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage === totalPages}
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

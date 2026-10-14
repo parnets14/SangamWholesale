@@ -9,15 +9,10 @@ import {
   Upload,
   Spin,
 } from "antd";
-import {
-  UploadOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  PlusOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
+import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useAdmin } from "../context/AdminContext";
+import Pagination, { DEFAULT_PAGE_SIZE } from "./Pagination";
 
 const API_BASE = "/api";
 
@@ -41,6 +36,19 @@ const Subcategory = () => {
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+
+  // Pagination — clamp the page so deleting/filtering can never strand us on an empty page
+  const PAGE_SIZE = DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(subcategories.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedSubcategories = subcategories.slice(startIndex, startIndex + PAGE_SIZE);
+
+  // Go back to page 1 whenever the category filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCategory]);
 
   const authHeaders = (extra = {}) => ({
     ...extra,
@@ -75,7 +83,12 @@ const Subcategory = () => {
       });
       let subcats = response.data?.subcategories || response.data || [];
       if (categoryId) {
-        subcats = subcats.filter((sub) => sub.category?._id === categoryId);
+        // handle both a populated category object and a raw id string
+        subcats = subcats.filter((sub) => {
+          const subCategoryId =
+            typeof sub.category === "string" ? sub.category : sub.category?._id;
+          return subCategoryId === categoryId;
+        });
       }
       setSubcategories(subcats);
     } catch (err) {
@@ -145,8 +158,9 @@ const Subcategory = () => {
 
       const formData = new FormData();
       // Backend expects: name, description, categoryId
+      // description is optional — send an empty string rather than "undefined"
       formData.append("name", values.name);
-      formData.append("description", values.description);
+      formData.append("description", values.description || "");
       formData.append("categoryId", values.categoryId);
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append("image", fileList[0].originFileObj);
@@ -287,74 +301,94 @@ const Subcategory = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subcategories.map((subcat) => (
-            <div
-              key={subcat._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="h-40 bg-gray-200 flex items-center justify-center">
-                {subcat.image ? (
-                  <img
-                    src={getImageUrl(subcat.image)}
-                    alt={subcat.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="text-gray-400 text-center">
-                    <PlusOutlined style={{ fontSize: 32 }} />
-                    <p>No Image</p>
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {subcat.name}
-                </h3>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                  {subcat.description}
-                </p>
-                <div className="text-xs text-gray-500 mb-2">
-                  Category: {subcat.category?.name || "N/A"}
-                </div>
-                <div className="text-xs text-gray-500 mb-3">
-                  Created: {new Date(subcat.createdAt).toLocaleDateString()}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    icon={<EyeOutlined />}
-                    onClick={() => setViewItem(subcat)}
-                    style={{ backgroundColor: "#0d9488", borderColor: "#0d9488", color: "#fff" }}
-                    size="small"
-                  >
-                    View
-                  </Button>
-                  <Button
-                    icon={<EditOutlined />}
-                    onClick={() => openModal(subcat)}
-                    type="primary"
-                    size="small"
-                    disabled={!isAdminAuthenticated}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleDelete(subcat)}
-                    danger
-                    size="small"
-                    disabled={!isAdminAuthenticated}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["Image", "Name", "Description", "Category", "Created Date", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagedSubcategories.map((subcat) => (
+                  <tr key={subcat._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      {subcat.image ? (
+                        <img
+                          src={getImageUrl(subcat.image)}
+                          alt={subcat.name}
+                          className="w-14 h-14 object-cover rounded border border-gray-100"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                          <PlusOutlined style={{ fontSize: 20 }} />
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                      {subcat.name}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-sm max-w-xs truncate">
+                      {subcat.description || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {subcat.category?.name || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">
+                      {new Date(subcat.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => setViewItem(subcat)}
+                          className="bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => openModal(subcat)}
+                          disabled={!isAdminAuthenticated}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(subcat)}
+                          disabled={!isAdminAuthenticated}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && subcategories.length > 0 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onChange={setPage}
+          total={subcategories.length}
+          pageSize={PAGE_SIZE}
+          label="subcategory"
+        />
       )}
 
       {/* View Modal */}
@@ -452,8 +486,6 @@ const Subcategory = () => {
             name="description"
             label="Description"
             rules={[
-              { required: true, message: "Please input description!" },
-              { min: 10, message: "Description must be at least 10 characters!" },
               { max: 500, message: "Description cannot exceed 500 characters!" },
             ]}
           >
@@ -465,7 +497,13 @@ const Subcategory = () => {
             />
           </Form.Item>
 
-          <Form.Item label={editingSubcategory ? "Image (optional — leave empty to keep current)" : "Image *"}>
+          <Form.Item
+            label={
+              editingSubcategory
+                ? "Image (optional — leave empty to keep current)"
+                : "Image (optional)"
+            }
+          >
             <Upload {...uploadProps}>
               {fileList.length >= 1 ? null : (
                 <div>

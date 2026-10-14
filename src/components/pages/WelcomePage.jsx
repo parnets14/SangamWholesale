@@ -2,13 +2,13 @@ import { motion } from "framer-motion";
 
 import HeroSection from "../home/HeroSection";
 import CategoriesPage from "../home/CategoriesPage";
-import AppDownloadSection from "../home/AppDownloadSection";
+// import AppDownloadSection from "../home/AppDownloadSection";
 import ThreeStepProcess from "../home/ThreeStepProcess";
 import He from "../home/He";
-import StatsSection from "../home/StatsSection";
+// import StatsSection from "../home/StatsSection";
 import MobileAppSection from "../home/MobileAppSection";
 // import TopBrandsSection from "../home/TopBrandsSection";
-import TestimonialSection from "../home/testimonials";
+// import TestimonialSection from "../home/testimonials";
 import CategoryPage from "../rr/CategoryPage";
 
 // Animation variants
@@ -62,7 +62,7 @@ const WelcomePage = () => {
         <He />
       </motion.section>
 
-      {/* Stats */}
+      {/* Stats
       <motion.section
         variants={fadeUp}
         initial="hidden"
@@ -70,7 +70,7 @@ const WelcomePage = () => {
         transition={{ duration: 0.6, delay: 0.5 }}
       >
         <StatsSection />
-      </motion.section>
+      </motion.section> */}
 
       {/* Mobile App Promo */}
       <motion.section
@@ -92,7 +92,7 @@ const WelcomePage = () => {
         <TopBrandsSection />
       </motion.section> */}
 
-      {/* Testimonials */}
+      {/* Testimonials
       <motion.section
         variants={fadeUp}
         initial="hidden"
@@ -100,9 +100,9 @@ const WelcomePage = () => {
         transition={{ duration: 0.6, delay: 0.8 }}
       >
         <TestimonialSection />
-      </motion.section>
+      </motion.section> */}
 
-      {/* App Download */}
+      {/* App Download
       <motion.section
         variants={fadeUp}
         initial="hidden"
@@ -110,7 +110,7 @@ const WelcomePage = () => {
         transition={{ duration: 0.6, delay: 0.9 }}
       >
         <AppDownloadSection />
-      </motion.section>
+      </motion.section> */}
     </div>
   );
 };

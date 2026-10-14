@@ -1,20 +1,52 @@
 import React, { useState, useEffect } from "react";
-import { MdVisibility, MdClose, MdPeople, MdDeleteOutline } from "react-icons/md";
+import {
+  MdVisibility,
+  MdClose,
+  MdPeople,
+  MdDeleteOutline,
+  MdPhone,
+  MdEmail,
+  MdStorefront,
+} from "react-icons/md";
 import { useAdmin } from "../context/AdminContext";
 
 const USERS_URL = "/api/user/all";
 const BUSINESS_URL = "/api/admin/business";
 
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
+const BRAND = "#702834";
+const PAGE_SIZE = 10;
+
+// Build a compact page list, e.g. 1 … 4 5 6 … 20
+const getPageNumbers = (current, total) => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const wanted = [...new Set([1, total, current - 1, current, current + 1])]
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const out = [];
+  let prev = 0;
+  wanted.forEach((p) => {
+    if (prev && p - prev > 1) out.push("…");
+    out.push(p);
+    prev = p;
+  });
+  return out;
+};
+
+// Initials for the customer avatar, e.g. "Kiran" -> "K", "San Kumar" -> "SK"
+const getInitials = (name) => {
+  if (!name) return "?";
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
 };
 
 /**
  * Unified Customers page — merges Users + Businesses.
- * Lists every registered customer with their business/KYC status, and the
- * View modal shows profile + business details together with approve/reject.
+ * Lists every registered customer with their profile / business / KYC details.
  */
 const Customers = () => {
   const { token } = useAdmin();
@@ -24,9 +56,7 @@ const Customers = () => {
   const [viewItem, setViewItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [actionModal, setActionModal] = useState({ open: false, type: null, business: null });
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const authHeaders = { Authorization: `Bearer ${token}`, "Cache-Control": "no-store" };
 
@@ -67,58 +97,31 @@ const Customers = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const handleApprove = async (businessId) => {
-    setActionLoading(true);
-    try {
-      const res = await fetch(`${BUSINESS_URL}/approve/${businessId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ approvalStatus: "approved" }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        await fetchAll();
-        setActionModal({ open: false, type: null, business: null });
-        setViewItem(null);
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleReject = async (businessId) => {
-    if (!rejectionReason.trim()) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`${BUSINESS_URL}/approve/${businessId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ approvalStatus: "rejected", rejectionReason }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        await fetchAll();
-        setActionModal({ open: false, type: null, business: null });
-        setViewItem(null);
-        setRejectionReason("");
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!deleteItem) return;
+    const id = deleteItem._id;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/user/admin/${deleteItem._id}`, {
+      const res = await fetch(`/api/user/admin/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (data.success) {
-        setRows((prev) => prev.filter((r) => r._id !== deleteItem._id));
+
+      // Read defensively — an error response may not always be JSON
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (_) {
+        /* no body */
+      }
+
+      // A 404 means the customer is already gone (e.g. an earlier attempt
+      // succeeded). Treat that as deleted instead of showing "User not found".
+      const alreadyGone = res.status === 404;
+      if (res.ok || alreadyGone || data.success) {
+        setRows((prev) => prev.filter((r) => r._id !== id));
         setDeleteItem(null);
+        setError(null);
       } else {
         setError(data.message || "Could not delete customer");
       }
@@ -129,90 +132,216 @@ const Customers = () => {
     }
   };
 
-  const bizStatusBadge = (biz) => {
-    if (!biz) return <span className="text-gray-400 text-xs">No business</span>;
-    const s = biz.approvalStatus || "pending";
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-bold ${statusColors[s] || "bg-gray-100 text-gray-700"}`}>
-        {s}
-      </span>
-    );
-  };
+  const thClass =
+    "px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider whitespace-nowrap";
+
+  // Pagination — clamp the page so deleting rows can never strand us on an empty page
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedRows = rows.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 pb-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="mb-6 pb-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <MdPeople className="text-3xl" style={{ color: "#702834" }} />
+            <MdPeople className="text-3xl" style={{ color: BRAND }} />
             Customers
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             All registered users and their business / KYC details.
           </p>
         </div>
-        <div className="px-4 py-2 rounded-lg text-white text-sm font-semibold" style={{ backgroundColor: "#702834" }}>
+        <div
+          className="px-4 py-2 rounded-full text-white text-sm font-semibold shadow-sm"
+          style={{ backgroundColor: BRAND }}
+        >
           {rows.length} Customer{rows.length !== 1 ? "s" : ""}
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">{error}</div>
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          {error}
+        </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {["Customer", "Phone", "Email", "Business", "Business Status", "Actions"].map((h) => (
-                <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading ? (
-              <tr><td colSpan="6" className="px-6 py-10 text-center text-gray-500">Loading…</td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan="6" className="px-6 py-10 text-center text-gray-500">No customers found.</td></tr>
-            ) : (
-              rows.map((u) => (
-                <tr key={u._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                    {u.userDetails?.fullName || "—"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {u.userDetails?.email || "—"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {u.business?.businessName || <span className="text-gray-400">—</span>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{bizStatusBadge(u.business)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setViewItem(u)}
-                        className="inline-flex items-center gap-1 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
-                      >
-                        <MdVisibility className="text-base" /> View
-                      </button>
-                      <button
-                        onClick={() => setDeleteItem(u)}
-                        className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
-                      >
-                        <MdDeleteOutline className="text-base" /> Delete
-                      </button>
-                    </div>
+      {/* Table card */}
+      <div className="bg-white rounded-2xl shadow-lg ring-1 ring-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr style={{ backgroundColor: "#fdf6f7" }}>
+                {["Customer", "Phone", "Email", "Business", "Actions"].map((h) => (
+                  <th key={h} className={thClass} style={{ color: BRAND }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-16 text-center text-gray-500">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 mb-3" style={{ borderColor: BRAND }} />
+                    <div>Loading customers…</div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-16 text-center text-gray-500">
+                    <MdPeople className="text-4xl mx-auto mb-2 text-gray-300" />
+                    No customers found.
+                  </td>
+                </tr>
+              ) : (
+                pagedRows.map((u) => {
+                  const name = u.userDetails?.fullName || u.phone || "—";
+                  return (
+                    <tr key={u._id} className="transition-colors hover:bg-[#fdf6f7]">
+                      {/* Customer */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm"
+                            style={{ backgroundColor: BRAND }}
+                          >
+                            {getInitials(u.userDetails?.fullName)}
+                          </div>
+                          <span className="text-sm font-semibold text-gray-800">
+                            {u.userDetails?.fullName || "—"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Phone */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-2 text-sm text-gray-600">
+                          <MdPhone className="text-gray-400" />
+                          {u.phone || "—"}
+                        </span>
+                      </td>
+
+                      {/* Email */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {u.userDetails?.email ? (
+                          <span className="inline-flex items-center gap-2 text-sm text-gray-600">
+                            <MdEmail className="text-gray-400" />
+                            {u.userDetails.email}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
+                        )}
+                      </td>
+
+                      {/* Business */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {u.business?.businessName ? (
+                          <div className="flex items-center gap-2">
+                            <MdStorefront className="text-gray-400 flex-shrink-0" />
+                            <div>
+                              <div className="text-sm text-gray-800 font-medium">
+                                {u.business.businessName}
+                              </div>
+                              {u.business.category && (
+                                <div className="text-xs text-gray-400">
+                                  {u.business.category}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">No business</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setViewItem(u)}
+                            className="inline-flex items-center gap-1.5 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm"
+                          >
+                            <MdVisibility className="text-base" /> View
+                          </button>
+                          <button
+                            onClick={() => setDeleteItem(u)}
+                            className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm"
+                          >
+                            <MdDeleteOutline className="text-base" /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Pagination */}
+      {!loading && rows.length > 0 && (
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-5 px-1">
+          <p className="text-sm text-gray-500">
+            Showing{" "}
+            <span className="font-semibold text-gray-700">{startIndex + 1}</span>–
+            <span className="font-semibold text-gray-700">
+              {Math.min(startIndex + PAGE_SIZE, rows.length)}
+            </span>{" "}
+            of <span className="font-semibold text-gray-700">{rows.length}</span>{" "}
+            customer{rows.length !== 1 ? "s" : ""}
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage(Math.max(1, safePage - 1))}
+              disabled={safePage === 1}
+              className="px-3.5 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Prev
+            </button>
+
+            {getPageNumbers(safePage, totalPages).map((n, i) =>
+              n === "…" ? (
+                <span key={`gap-${i}`} className="px-1.5 text-sm text-gray-400">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className="min-w-[36px] px-2.5 py-1.5 rounded-lg border text-sm font-semibold transition-colors"
+                  style={
+                    n === safePage
+                      ? { backgroundColor: BRAND, borderColor: BRAND, color: "#fff" }
+                      : { borderColor: "#e5e7eb", color: "#4b5563" }
+                  }
+                  onMouseEnter={(e) => {
+                    if (n !== safePage) e.currentTarget.style.backgroundColor = "#fdf6f7";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (n !== safePage) e.currentTarget.style.backgroundColor = "";
+                  }}
+                >
+                  {n}
+                </button>
+              )
+            )}
+
+            <button
+              onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+              disabled={safePage === totalPages}
+              className="px-3.5 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* View Modal — profile + business together */}
       {viewItem && (
@@ -222,8 +351,11 @@ const Customers = () => {
           onClick={() => setViewItem(null)}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: "#702834" }}>
-              <h3 className="text-base font-bold text-white">
+            <div className="flex items-center gap-3 px-6 py-4" style={{ backgroundColor: BRAND }}>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                {getInitials(viewItem.userDetails?.fullName)}
+              </div>
+              <h3 className="text-base font-bold text-white flex-1">
                 {viewItem.userDetails?.fullName || viewItem.phone}
               </h3>
               <button onClick={() => setViewItem(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 text-white">
@@ -261,34 +393,12 @@ const Customers = () => {
                       { label: "GST Number", value: viewItem.business.gstNumber },
                       { label: "Category", value: viewItem.business.category },
                       { label: "Est. Year", value: viewItem.business.establishmentYear },
-                      { label: "Status", value: viewItem.business.approvalStatus },
                     ].map(({ label, value }) => value ? (
                       <div key={label} className="flex justify-between gap-4">
                         <span className="text-xs text-gray-500">{label}</span>
                         <span className="text-sm text-gray-800 font-medium text-right capitalize break-all">{value}</span>
                       </div>
                     ) : null)}
-                    {viewItem.business.approvalStatus === "rejected" && viewItem.business.rejectionReason && (
-                      <p className="text-xs text-red-500 mt-1">Reason: {viewItem.business.rejectionReason}</p>
-                    )}
-
-                    {/* Approve / Reject */}
-                    {viewItem.business.approvalStatus === "pending" && (
-                      <div className="flex gap-2 pt-3">
-                        <button
-                          className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold"
-                          onClick={() => setActionModal({ open: true, type: "approve", business: viewItem.business })}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold"
-                          onClick={() => setActionModal({ open: true, type: "reject", business: viewItem.business })}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400 italic">This customer has not added a business yet.</p>
@@ -300,57 +410,6 @@ const Customers = () => {
               <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                 Close
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Approve / Reject confirmation */}
-      {actionModal.open && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(0,0,0,0.25)" }}
-          onClick={() => setActionModal({ open: false, type: null, business: null })}
-        >
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">
-              {actionModal.type === "approve" ? "Approve Business" : "Reject Business"}
-            </h3>
-            <div className="font-medium mb-3">{actionModal.business.businessName}</div>
-            {actionModal.type === "reject" && (
-              <textarea
-                className="w-full border rounded px-2 py-1 mb-3"
-                rows={3}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Enter reason for rejection"
-              />
-            )}
-            <div className="flex gap-2 justify-end">
-              <button
-                className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
-                onClick={() => { setActionModal({ open: false, type: null, business: null }); setRejectionReason(""); }}
-                disabled={actionLoading}
-              >
-                Cancel
-              </button>
-              {actionModal.type === "approve" ? (
-                <button
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                  onClick={() => handleApprove(actionModal.business._id)}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? "Approving…" : "Approve"}
-                </button>
-              ) : (
-                <button
-                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-                  onClick={() => handleReject(actionModal.business._id)}
-                  disabled={actionLoading || !rejectionReason.trim()}
-                >
-                  {actionLoading ? "Rejecting…" : "Reject"}
-                </button>
-              )}
             </div>
           </div>
         </div>

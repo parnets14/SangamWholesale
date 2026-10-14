@@ -80,10 +80,12 @@ const Product = () => {
 
   const fetchSubcategories = async (categoryId = null) => {
     try {
-      let url = `${API_BASE}/subcategories/`;
-      if (categoryId) {
-        url += `?category=${categoryId}`;
-      }
+      // NOTE: the backend ignores a ?category= query param on the list route and
+      // would return EVERY subcategory. The by-category filter lives on its own
+      // path segment: /subcategories/category/:categoryId
+      const url = categoryId
+        ? `${API_BASE}/subcategories/category/${categoryId}`
+        : `${API_BASE}/subcategories/`;
       const res = await axios.get(url, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -98,6 +100,17 @@ const Product = () => {
       } else if (Array.isArray(res.data)) {
         subcategoriesData = res.data;
       }
+
+      // Safety net: if the server ever hands back the full list, narrow it here
+      // so a category can never show subcategories that belong to another one.
+      if (categoryId) {
+        subcategoriesData = subcategoriesData.filter((sub) => {
+          const subCategoryId =
+            typeof sub.category === "string" ? sub.category : sub.category?._id;
+          return subCategoryId === categoryId;
+        });
+      }
+
       setSubcategories(subcategoriesData);
     } catch (err) {
       message.error("Failed to fetch subcategories");
@@ -127,14 +140,15 @@ const Product = () => {
       setSubmitting(true);
       const formData = new FormData();
       formData.append("name", values.name);
-      formData.append("description", values.description);
+      // description and brand are optional — send "" rather than the literal "undefined"
+      formData.append("description", values.description || "");
       formData.append("subcategory", values.subcategory);
       formData.append("price", values.price);
       formData.append("discountPrice", values.discountPrice || 0);
       formData.append("unit", values.unit);
       formData.append("quantity", values.quantity);
       formData.append("stock", values.stock);
-      formData.append("brand", values.brand);
+      formData.append("brand", values.brand || "");
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append("image", fileList[0].originFileObj);
       }
@@ -493,17 +507,7 @@ const Product = () => {
             <Input placeholder="Enter product name" />
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[
-              { required: true, message: "Please input description!" },
-              {
-                min: 10,
-                message: "Description must be at least 10 characters",
-              },
-            ]}
-          >
+          <Form.Item name="description" label="Description">
             <TextArea rows={4} placeholder="Enter product description" />
           </Form.Item>
 
@@ -571,25 +575,13 @@ const Product = () => {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                name="brand"
-                label="Brand"
-                rules={[{ required: true, message: "Please input brand!" }]}
-              >
+              <Form.Item name="brand" label="Brand">
                 <Input placeholder="Enter brand name" />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item
-            label="Product Image"
-            rules={[
-              {
-                required: fileList.length === 0,
-                message: "Please upload an image!",
-              },
-            ]}
-          >
+          <Form.Item label="Product Image">
             <Upload {...uploadProps}>
               {fileList.length >= 1 ? null : (
                 <div>

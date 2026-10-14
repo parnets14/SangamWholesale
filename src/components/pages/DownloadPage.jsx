@@ -4,11 +4,11 @@ import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { CheckCircle, ShieldCheck, Zap, Star } from "lucide-react";
 import toast from "react-hot-toast";
 
-// ─── SET REAL STORE LINKS HERE WHEN APP IS PUBLISHED ───────────────────────
-// Replace null with the actual URL string to activate the button
-// e.g. "https://play.google.com/store/apps/details?id=com.sangamwholesale"
-const GOOGLE_PLAY_URL = null;
-const APP_STORE_URL   = null;
+// ─── REAL STORE LINKS ───────────────────────────────────────────────────────
+const GOOGLE_PLAY_URL =
+  "https://play.google.com/store/apps/details?id=com.sangamwholesale";
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/sangam-wholesale/id6797504951";
 // ────────────────────────────────────────────────────────────────────────────
 
 const features = [
@@ -184,11 +184,6 @@ export default function DownloadPage() {
                     App Store
                   </span>
                 </span>
-                {!APP_STORE_URL && (
-                  <span className="ml-1 text-xs bg-white/20 rounded-full px-2 py-0.5 font-medium">
-                    Soon
-                  </span>
-                )}
               </motion.button>
 
               {/* Google Play */}
@@ -206,7 +201,12 @@ export default function DownloadPage() {
                 }
                 aria-label="Get it on Google Play"
               >
-                <FaGooglePlay className="text-2xl flex-shrink-0" />
+                <img
+                  src="/google-play.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-7 w-7 object-contain flex-shrink-0"
+                />
                 <span className="text-left">
                   <span className="block text-xs leading-none opacity-75">
                     Get it on
@@ -215,11 +215,6 @@ export default function DownloadPage() {
                     Google Play
                   </span>
                 </span>
-                {!GOOGLE_PLAY_URL && (
-                  <span className="ml-1 text-xs bg-white/20 rounded-full px-2 py-0.5 font-medium">
-                    Soon
-                  </span>
-                )}
               </motion.button>
             </div>
 

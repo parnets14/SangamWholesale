@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, Grid, User, ShoppingCart } from "lucide-react";
+import { Menu, X, LogOut, Grid, User, ShoppingCart, Home } from "lucide-react";
 import logo from "../../assets/images/sangamwholesale.png";
 
 const LoggedInHeader = () => {
@@ -93,6 +93,16 @@ const LoggedInHeader = () => {
           className="flex items-center space-x-4"
         >
           <Link
+            to="/Home"
+            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-300 group"
+          >
+            <Home
+              size={18}
+              className="mr-2 group-hover:scale-110 transition-transform"
+            />
+            Home
+          </Link>
+          <Link
             to="/categories"
             className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-300 group"
           >
@@ -170,6 +180,24 @@ const LoggedInHeader = () => {
             exit="hidden"
             className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center space-y-6 md:hidden"
           >
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Link
+                to="/Home"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-2xl flex items-center text-gray-800 hover:text-gray-600 transition-colors group"
+              >
+                <Home
+                  size={24}
+                  className="mr-4 group-hover:scale-110 transition-transform"
+                />
+                Home
+              </Link>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}

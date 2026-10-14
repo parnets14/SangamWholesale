@@ -4,6 +4,7 @@ import { useAdminApi } from "../context/AdminApiContext";
 import toast from "react-hot-toast";
 import dummyimage from "../../assets/images/dummyimage.jpg";
 import { PLACEHOLDER_IMAGE } from "../../utils/placeholderImage";
+import Pagination, { DEFAULT_PAGE_SIZE } from "./Pagination";
 
 const Category = () => {
   const {
@@ -24,6 +25,14 @@ const Category = () => {
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [page, setPage] = useState(1);
+
+  // Pagination — clamp the page so deleting categories can never strand us on an empty page
+  const PAGE_SIZE = DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedCategories = categories.slice(startIndex, startIndex + PAGE_SIZE);
 
   // Build image URL — relative path so it works in both dev (vite proxy) and production
   const getCategoryImageUrl = (image) => {
@@ -104,8 +113,8 @@ const Category = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.description.trim()) {
-      toast.error("Please fill in all required fields");
+    if (!formData.name.trim()) {
+      toast.error("Please enter a category name");
       return;
     }
     try {
@@ -207,7 +216,7 @@ const Category = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {categories.map((category) => (
+                {pagedCategories.map((category) => (
                   <tr key={category._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       {category.image ? (
@@ -258,6 +267,18 @@ const Category = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && categories.length > 0 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onChange={setPage}
+          total={categories.length}
+          pageSize={PAGE_SIZE}
+          label="category"
+        />
       )}
 
       {/* View Modal */}
@@ -344,7 +365,7 @@ const Category = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
+                  Description
                 </label>
                 <textarea
                   name="description"
@@ -353,7 +374,6 @@ const Category = () => {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter category description"
-                  required
                 />
               </div>
 

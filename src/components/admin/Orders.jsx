@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAdmin } from "../context/AdminContext";
-import { MdVisibility, MdClose, MdTwoWheeler } from "react-icons/md";
+import { MdVisibility, MdClose, MdTwoWheeler, MdDeleteOutline } from "react-icons/md";
 
 // Status is driven by the delivery partner's actions — read-only in admin.
 const DELIVERY_STATUS = {
@@ -42,6 +42,8 @@ const Orders = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [viewItem, setViewItem] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { if (token) fetchOrders(); }, [token]);
 
@@ -79,6 +81,39 @@ const Orders = () => {
 
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [search, filterStatus]);
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    const id = deleteItem._id;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/orders/admin/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Read defensively — an error response may not always be JSON
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (_) {
+        /* no body */
+      }
+
+      // A 404 means the order is already gone — treat that as deleted
+      if (res.ok || res.status === 404 || data.success) {
+        setOrders((prev) => prev.filter((o) => o._id !== id));
+        setDeleteItem(null);
+        setError(null);
+      } else {
+        setError(data.message || "Could not delete order");
+      }
+    } catch (e) {
+      setError("Could not delete order");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -146,7 +181,7 @@ const Orders = () => {
             <table className="min-w-full bg-white divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Order ID", "Customer", "Items", "Total", "Delivery Partner", "Status", "Created At", ""].map((h) => (
+                  {["Order ID", "Customer", "Items", "Total", "Delivery Partner", "Status", "Created At", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       {h}
                     </th>
@@ -193,12 +228,20 @@ const Orders = () => {
                         {new Date(order.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => setViewItem(order)}
-                          className="inline-flex items-center gap-1 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
-                        >
-                          <MdVisibility className="text-base" /> View
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setViewItem(order)}
+                            className="inline-flex items-center gap-1 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+                          >
+                            <MdVisibility className="text-base" /> View
+                          </button>
+                          <button
+                            onClick={() => setDeleteItem(order)}
+                            className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+                          >
+                            <MdDeleteOutline className="text-base" /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -344,6 +387,52 @@ const Orders = () => {
             <div className="px-6 py-4 border-t border-gray-100">
               <button onClick={() => setViewItem(null)} className="w-full py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {deleteItem && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            backgroundColor: "rgba(0,0,0,0.25)",
+          }}
+          onClick={() => !deleting && setDeleteItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <MdDeleteOutline className="text-3xl text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Delete Order?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              This permanently removes order{" "}
+              <span className="font-semibold text-gray-700">
+                {deleteItem.orderId}
+              </span>{" "}
+              worth ₹{deleteItem.total}. This can't be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteItem(null)}
+                disabled={deleting}
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
