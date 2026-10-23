@@ -19,6 +19,7 @@ const CartPag = () => {
     updateQuantity,
     clearCart,
     getTotal,
+    getGST,
     getItemCount,
   } = useCart();
   console.log("cartItems", cartItems);
@@ -85,9 +86,12 @@ const CartPag = () => {
                 </p>
                 {item.unit && (
                   <p className="text-gray-400 text-xs mb-1">
-                    Unit: {item.quantity} {item.unit}
+                    Unit: {item.unit}
                   </p>
                 )}
+                <p className="text-gray-400 text-xs mb-1">
+                  GST: {Number(item.gst) || 0}%
+                </p>
                 {item.description && (
                   <p className="text-gray-400 text-xs mb-1">
                     {item.description}
@@ -137,8 +141,16 @@ const CartPag = () => {
           <div className="text-lg text-gray-700">
             <span className="font-semibold">Total Items:</span> {getItemCount()}
           </div>
-          <div className="text-2xl font-bold text-gray-800">
-            <span className="font-semibold">Total:</span> ₹{getTotal()}
+          <div className="text-right">
+            <div className="text-sm text-gray-600">
+              Subtotal: ₹{getTotal()}
+            </div>
+            <div className="text-sm text-gray-600">
+              GST: ₹{getGST()}
+            </div>
+            <div className="text-2xl font-bold text-gray-800">
+              <span className="font-semibold">Total:</span> ₹{getTotal() + getGST()}
+            </div>
           </div>
           <button
             className="bg-green-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-700 transition"

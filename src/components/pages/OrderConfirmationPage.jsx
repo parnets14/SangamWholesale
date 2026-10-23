@@ -22,9 +22,14 @@ const OrderConfirmationPage = () => {
 
   // Use provided values or fallback to calculation
   const subtotal = orderDetails.subtotal ?? (orderDetails.items?.reduce((total, item) => total + item.price * item.quantity, 0) || 0);
-  const gst = orderDetails.gst ?? subtotal * 0.18;
-  const shipping = 99; // or use orderDetails.shipping if available
-  const total = orderDetails.total ?? (subtotal + gst + shipping);
+  // GST comes from the order (per-item GST total); no auto 18% fallback.
+  const gst =
+    orderDetails.gst ??
+    (orderDetails.items?.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 1) * ((Number(item.gst) || 0) / 100),
+      0
+    ) || 0);
+  const total = orderDetails.total ?? (subtotal + gst);
 
   return (
     <motion.div 
@@ -81,11 +86,7 @@ const OrderConfirmationPage = () => {
                   <span className="font-medium">₹{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-green-700">Shipping</span>
-                  <span className="font-medium">₹{shipping}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-green-700">Tax (18%)</span>
+                  <span className="text-green-700">GST</span>
                   <span className="font-medium">₹{gst.toLocaleString()}</span>
                 </div>
                 </div>

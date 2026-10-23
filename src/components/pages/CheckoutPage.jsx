@@ -21,7 +21,7 @@ import useRazorpay from '../../hooks/useRazorpay';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { cartItems, getTotal, clearCart } = useCart();
+  const { cartItems, getTotal, getGST, clearCart } = useCart();
   const { user, token } = useAuth();
 
   const { openRazorpay } = useRazorpay();
@@ -85,8 +85,8 @@ const CheckoutPage = () => {
   // ── Shared: save order to backend after payment is resolved ─────────────────
   const saveOrder = async ({ paymentMethodLabel, razorpayPaymentId = null }) => {
     const subtotal = getTotal();
-    const gst = subtotal * 0.18;
-    const total = subtotal * 1.18;
+    const gst = getGST();
+    const total = subtotal + gst;
 
     const orderPayload = {
       items: cartItems.map(item => ({
@@ -95,6 +95,8 @@ const CheckoutPage = () => {
         image: item.image,
         price: item.price,
         quantity: item.quantity,
+        gst: item.gst ?? 0,
+        unit: item.unit || "",
       })),
       deliveryAddress: formatAddress(selectedAddress),
       addressName: selectedAddress.shopName,
@@ -168,7 +170,7 @@ const CheckoutPage = () => {
     // ── UPI: open Razorpay modal first, save order only after verified ──────
     if (paymentMethod === 'upi') {
       setPlacingOrder(true);
-      const totalAmount = getTotal() * 1.18; // rupees incl. GST
+      const totalAmount = getTotal() + getGST(); // subtotal + per-item GST
 
       openRazorpay({
         amount: totalAmount,
@@ -296,7 +298,7 @@ const CheckoutPage = () => {
           >
             <div className="flex justify-between mb-2">
               <span className="font-medium">Order Total:</span>
-              <span className="font-bold">₹{getTotal().toLocaleString()}</span>
+              <span className="font-bold">₹{(getTotal() + getGST()).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Payment Method:</span>
@@ -469,12 +471,12 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex justify-between mb-2">
             <span className="text-gray-600">GST</span>
-            <span className="font-semibold">₹{(getTotal() * 0.18).toLocaleString()}</span>
+            <span className="font-semibold">₹{getGST().toLocaleString()}</span>
                 </div>
           <div className="border-t my-2" />
           <div className="flex justify-between text-lg font-bold">
             <span>Total Payable</span>
-            <span>₹{(getTotal() * 1.18).toLocaleString()}</span>
+            <span>₹{(getTotal() + getGST()).toLocaleString()}</span>
                 </div>
               </div>
               
@@ -493,7 +495,7 @@ const CheckoutPage = () => {
             {placingOrder
               ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
               : paymentMethod === 'upi'
-                ? `Pay ₹${(getTotal() * 1.18).toLocaleString(undefined, { maximumFractionDigits: 0 })} via Razorpay`
+                ? `Pay ₹${(getTotal() + getGST()).toLocaleString(undefined, { maximumFractionDigits: 0 })} via Razorpay`
                 : 'Place Order (COD)'
             }
           </button>

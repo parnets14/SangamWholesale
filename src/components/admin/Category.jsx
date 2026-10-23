@@ -23,16 +23,25 @@ const Category = () => {
     name: "",
     description: "",
     image: null,
+    order: "",
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [page, setPage] = useState(1);
 
+  // Display order: explicit order ascending (missing last), then oldest first
+  const sortedCategories = [...categories].sort((a, b) => {
+    const ao = typeof a.order === "number" ? a.order : Infinity;
+    const bo = typeof b.order === "number" ? b.order : Infinity;
+    if (ao !== bo) return ao - bo;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+
   // Pagination — clamp the page so deleting categories can never strand us on an empty page
   const PAGE_SIZE = DEFAULT_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(categories.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedCategories.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const startIndex = (safePage - 1) * PAGE_SIZE;
-  const pagedCategories = categories.slice(startIndex, startIndex + PAGE_SIZE);
+  const pagedCategories = sortedCategories.slice(startIndex, startIndex + PAGE_SIZE);
 
   // Build image URL — relative path so it works in both dev (vite proxy) and production
   const getCategoryImageUrl = (image) => {
@@ -78,7 +87,7 @@ const Category = () => {
 
   const handleAdd = () => {
     setEditingCategory(null);
-    setFormData({ name: "", description: "", image: null });
+    setFormData({ name: "", description: "", image: null, order: "" });
     setImagePreview(null);
     setIsModalVisible(true);
   };
@@ -89,6 +98,7 @@ const Category = () => {
       name: category.name || "",
       description: category.description || "",
       image: null,
+      order: category.order ?? "",
     });
     setImagePreview(
       category.image ? getCategoryImageUrl(category.image) : dummyimage
@@ -121,6 +131,7 @@ const Category = () => {
       const fd = new FormData();
       fd.append("name", formData.name.trim());
       fd.append("description", formData.description.trim());
+      fd.append("order", formData.order);
       if (formData.image) {
         fd.append("image", formData.image);
       }
@@ -131,7 +142,7 @@ const Category = () => {
         await createCategory(fd);
         toast.success("Category created successfully");
       }
-      setFormData({ name: "", description: "", image: null });
+      setFormData({ name: "", description: "", image: null, order: "" });
       setImagePreview(null);
       setIsModalVisible(false);
       setEditingCategory(null);
@@ -144,7 +155,7 @@ const Category = () => {
 
   const handleCloseModal = () => {
     setIsModalVisible(false);
-    setFormData({ name: "", description: "", image: null });
+    setFormData({ name: "", description: "", image: null, order: "" });
     setImagePreview(null);
     setEditingCategory(null);
   };
@@ -210,6 +221,7 @@ const Category = () => {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Image</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created Date</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -235,6 +247,9 @@ const Category = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800">{category.name}</td>
+                    <td className="px-4 py-3 text-gray-700 text-sm font-semibold">
+                      {typeof category.order === "number" ? category.order : "—"}
+                    </td>
                     <td className="px-4 py-3 text-gray-600 text-sm max-w-xs truncate">{category.description}</td>
                     <td className="px-4 py-3 text-gray-500 text-sm">
                       {new Date(category.createdAt).toLocaleDateString()}
@@ -275,7 +290,7 @@ const Category = () => {
           page={safePage}
           totalPages={totalPages}
           onChange={setPage}
-          total={categories.length}
+          total={sortedCategories.length}
           pageSize={PAGE_SIZE}
           label="category"
         />
@@ -374,6 +389,20 @@ const Category = () => {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter category description"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Display Order
+                </label>
+                <input
+                  type="number"
+                  name="order"
+                  value={formData.order}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. 1 (leave blank to show last)"
                 />
               </div>
 

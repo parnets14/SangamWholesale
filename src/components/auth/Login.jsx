@@ -56,7 +56,7 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(`${data.otp}'OTP sent successfully!'`);
+        toast.success(`${data.otp}'OTP sent successfully!'`, { duration: 20000 });
         navigate("/otp", { state: { mobile } });
       } else {
         toast.error(data.message || "Failed to send OTP");

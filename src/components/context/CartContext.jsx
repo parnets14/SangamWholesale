@@ -70,6 +70,16 @@ export const CartProvider = ({ children }) => {
     0
   );
 
+  // Per-item GST: Σ price × qty × (product GST% / 100). No GST on a product → 0.
+  const getGST = () => {
+    const gst = cartItems.reduce((total, item) => {
+      const price = parseInt((item.price + '').replace('₹', '').replace(',', '')) || 0;
+      const gstPct = Number(item.gst) || 0;
+      return total + (price * item.quantity * gstPct) / 100;
+    }, 0);
+    return Math.round(gst * 100) / 100;
+  };
+
   const getItemCount = () => cartItems.reduce((total, item) => total + item.quantity, 0);
 
   return (
@@ -81,6 +91,7 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         clearCart,
         getTotal,
+        getGST,
         getItemCount,
       }}
     >

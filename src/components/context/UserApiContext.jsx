@@ -54,8 +54,21 @@ export const UserApiProvider = ({ children }) => {
       const data = await makeRequest("/categories/");
       console.log("Categories API Response:", data);
 
+      // Display order: explicit order ascending (missing last), then oldest
+      // first — so newly-added categories appear at the end of the grid.
+      const orderedCategories = (data.categories || [])
+        .slice()
+        .sort((a, b) => {
+          const ao = typeof a.order === "number" ? a.order : Infinity;
+          const bo = typeof b.order === "number" ? b.order : Infinity;
+          if (ao !== bo) return ao - bo;
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        });
+
       // Transform the data to match the expected format
-      const transformedCategories = (data.categories || []).map(
+      const transformedCategories = orderedCategories.map(
         (category, index) => ({
           id: category._id,
           title: category.name,
@@ -96,20 +109,20 @@ export const UserApiProvider = ({ children }) => {
       console.log("Subcategories API Response:", data);
 
       // Transform the data to match the expected format
-      const transformedSubcategories = (data.subcategories || []).map(
-        (subcategory) => ({
+      const transformedSubcategories = (data.subcategories || [])
+        .filter((subcategory) => subcategory.category) // skip orphaned subcategories (no category)
+        .map((subcategory) => ({
           id: subcategory._id,
           name: subcategory.name,
           description: subcategory.description,
           image: subcategory.image
             ? getImageUrl("subcategories", subcategory.image)
             : null,
-          categoryId: subcategory.category._id,
-          categoryName: subcategory.category.name,
+          categoryId: subcategory.category?._id,
+          categoryName: subcategory.category?.name,
           createdAt: subcategory.createdAt,
           updatedAt: subcategory.updatedAt,
-        })
-      );
+        }));
 
       setSubcategories(transformedSubcategories);
       return transformedSubcategories;
@@ -137,6 +150,9 @@ export const UserApiProvider = ({ children }) => {
         description: product.description,
         price: product.price,
         discountPrice: product.discountPrice,
+        gst: product.gst ?? 0,
+        packSize: product.packSize ?? null,
+        baseUnit: product.baseUnit || "",
         stock: product.stock,
         unit: product.unit,
         quantity: product.quantity,
@@ -144,8 +160,8 @@ export const UserApiProvider = ({ children }) => {
         image: product.image
           ? getImageUrl("products", product.image)
           : null,
-        subcategoryId: product.subcategory._id,
-        subcategoryName: product.subcategory.name,
+        subcategoryId: product.subcategory?._id,
+        subcategoryName: product.subcategory?.name,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         // Calculate discount percentage
@@ -182,6 +198,9 @@ export const UserApiProvider = ({ children }) => {
         description: product.description,
         price: product.price,
         discountPrice: product.discountPrice,
+        gst: product.gst ?? 0,
+        packSize: product.packSize ?? null,
+        baseUnit: product.baseUnit || "",
         stock: product.stock,
         unit: product.unit,
         quantity: product.quantity,
@@ -189,8 +208,8 @@ export const UserApiProvider = ({ children }) => {
         image: product.image
           ? getImageUrl("products", product.image)
           : null,
-        subcategoryId: product.subcategory._id,
-        subcategoryName: product.subcategory.name,
+        subcategoryId: product.subcategory?._id,
+        subcategoryName: product.subcategory?.name,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         // Calculate discount percentage
@@ -228,6 +247,9 @@ export const UserApiProvider = ({ children }) => {
         description: product.description,
         price: product.price,
         discountPrice: product.discountPrice,
+        gst: product.gst ?? 0,
+        packSize: product.packSize ?? null,
+        baseUnit: product.baseUnit || "",
         stock: product.stock,
         unit: product.unit,
         quantity: product.quantity,
@@ -262,20 +284,20 @@ export const UserApiProvider = ({ children }) => {
       console.log("Subcategories by Category API Response:", data);
 
       // Transform the data to match the expected format
-      const transformedSubcategories = (data.subcategories || []).map(
-        (subcategory) => ({
+      const transformedSubcategories = (data.subcategories || [])
+        .filter((subcategory) => subcategory.category) // skip orphaned subcategories (no category)
+        .map((subcategory) => ({
           id: subcategory._id,
           name: subcategory.name,
           description: subcategory.description,
           image: subcategory.image
             ? getImageUrl("subcategories", subcategory.image)
             : null,
-          categoryId: subcategory.category._id,
-          categoryName: subcategory.category.name,
+          categoryId: subcategory.category?._id,
+          categoryName: subcategory.category?.name,
           createdAt: subcategory.createdAt,
           updatedAt: subcategory.updatedAt,
-        })
-      );
+        }));
 
       return transformedSubcategories;
     } catch (err) {

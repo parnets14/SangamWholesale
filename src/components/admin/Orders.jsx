@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "../context/AdminContext";
-import { MdVisibility, MdClose, MdTwoWheeler, MdDeleteOutline } from "react-icons/md";
+import { MdVisibility, MdClose, MdTwoWheeler, MdDeleteOutline, MdReceipt, MdPrint } from "react-icons/md";
 
 // Status is driven by the delivery partner's actions — read-only in admin.
 const DELIVERY_STATUS = {
@@ -33,6 +34,16 @@ const getImageUrl = (image) => {
   return image;
 };
 
+// Seller (Sangam Wholesale) details shown in the invoice "From" block.
+// TODO: replace `address` (and optionally `phone`) with the exact shop details.
+const SELLER = {
+  name: "SANGAM WHOLESALE PVT. LTD.",
+  address: "Shop No:2, 1st Floor, Umapathi Building, 9th Main Road, Weavers Colony, Anekal, Bengaluru – 562106",
+  gstin: "29ABUCS3779C1ZM",
+  cin: "U46901KA2026PTC224184",
+  phone: "",
+};
+
 const Orders = () => {
   const { token } = useAdmin();
   const [orders, setOrders] = useState([]);
@@ -43,6 +54,7 @@ const Orders = () => {
   const [page, setPage] = useState(1);
   const [viewItem, setViewItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
+  const [invoiceItem, setInvoiceItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { if (token) fetchOrders(); }, [token]);
@@ -117,6 +129,31 @@ const Orders = () => {
 
   return (
     <div className="p-6">
+      {/* Print styles — hide the app, show only the portaled invoice */}
+      {invoiceItem && (
+        <style>{`
+          @media print {
+            @page { size: A4 portrait; margin: 14mm; }
+            html, body { background: #fff !important; }
+            body > *:not(.invoice-portal) { display: none !important; }
+            .invoice-portal { display: block !important; }
+            .invoice-portal .invoice-backdrop {
+              display: block !important; position: static !important;
+              background: none !important; padding: 0 !important; overflow: visible !important;
+            }
+            .invoice-portal .invoice-card-wrap {
+              width: 100% !important; max-width: 100% !important; margin: 0 !important;
+            }
+            .invoice-portal .no-print { display: none !important; }
+            .invoice-portal .invoice-print {
+              width: 100% !important; max-width: 100% !important;
+              margin: 0 !important; padding: 0 !important;
+              box-shadow: none !important; border-radius: 0 !important;
+            }
+          }
+        `}</style>
+      )}
+
       <div className="mb-6 pb-4 border-b border-gray-200 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
@@ -234,6 +271,13 @@ const Orders = () => {
                             className="inline-flex items-center gap-1 bg-[#0d9488] hover:bg-[#0f766e] text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
                           >
                             <MdVisibility className="text-base" /> View
+                          </button>
+                          <button
+                            onClick={() => setInvoiceItem(order)}
+                            className="inline-flex items-center gap-1 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+                            style={{ backgroundColor: "#702834" }}
+                          >
+                            <MdReceipt className="text-base" /> Invoice
                           </button>
                           <button
                             onClick={() => setDeleteItem(order)}
@@ -437,6 +481,184 @@ const Orders = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Invoice modal — portaled to <body> so only the invoice prints */}
+      {invoiceItem && createPortal((() => {
+        const inv = invoiceItem;
+        const items = inv.items || [];
+        const subtotal =
+          inv.subtotal ??
+          items.reduce((s, it) => s + (it.price || 0) * (it.quantity || 1), 0);
+        const gst = inv.gst ?? 0;
+        const total = inv.total ?? subtotal + gst;
+        const custName = inv.user?.userDetails?.fullName || inv.addressName || "—";
+        const custPhone = inv.addressContact || inv.user?.phone || "";
+        const custBiz = inv.customerBusiness || null;
+        const toName = custBiz?.businessName || inv.addressName || custName;
+        const toGst = custBiz?.gstNumber || "";
+        return (
+          <div className="invoice-portal">
+          <div
+            className="invoice-backdrop fixed inset-0 z-[70] flex items-start justify-center p-4 overflow-y-auto"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={() => setInvoiceItem(null)}
+          >
+            <div className="invoice-card-wrap w-full max-w-2xl my-6" onClick={(e) => e.stopPropagation()}>
+              {/* Actions — hidden when printing */}
+              <div className="no-print flex justify-end gap-2 mb-3">
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors"
+                  style={{ backgroundColor: "#702834" }}
+                >
+                  <MdPrint /> Print Invoice
+                </button>
+                <button
+                  onClick={() => setInvoiceItem(null)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <MdClose /> Close
+                </button>
+              </div>
+
+              {/* Invoice — this is what prints */}
+              <div className="invoice-print bg-white rounded-xl shadow-lg p-8 text-gray-800">
+                {/* Brand + invoice meta */}
+                <div className="flex items-start justify-between border-b-2 pb-4 mb-6" style={{ borderColor: "#702834" }}>
+                  <div>
+                    <h1 className="text-2xl font-extrabold" style={{ color: "#702834" }}>Sangam Wholesale</h1>
+                    <p className="text-xs text-gray-500 mt-1">Tax Invoice</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-700">INVOICE</p>
+                    <p className="text-sm text-gray-600">#{inv.orderId}</p>
+                    <p className="text-xs text-gray-400">{new Date(inv.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                {/* From / To */}
+                <div className="grid grid-cols-2 gap-6 mb-5">
+                  {/* From — seller */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">From</p>
+                    <p className="text-sm font-bold text-gray-800">{SELLER.name}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">{SELLER.address}</p>
+                    <p className="text-xs text-gray-700 mt-1">
+                      <span className="text-gray-400">GSTIN:</span> {SELLER.gstin}
+                    </p>
+                    <p className="text-xs text-gray-700 mt-0.5">
+                      <span className="text-gray-400">CIN:</span> {SELLER.cin}
+                    </p>
+                    {SELLER.phone && <p className="text-xs text-gray-500">{SELLER.phone}</p>}
+                  </div>
+                  {/* To — buyer */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Bill To</p>
+                    <p className="text-sm font-bold text-gray-800">{toName}</p>
+                    {custPhone && <p className="text-xs text-gray-500">{custPhone}</p>}
+                    {toGst && (
+                      <p className="text-xs text-gray-700 mt-1">
+                        <span className="text-gray-400">GSTIN:</span> {toGst}
+                      </p>
+                    )}
+                    {inv.deliveryAddress && (
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">{inv.deliveryAddress}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Meta strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-xs border-y border-gray-100 py-3">
+                  <div>
+                    <p className="text-gray-400">Invoice Date</p>
+                    <p className="text-gray-700 font-medium">{new Date(inv.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Status</p>
+                    <p className="text-gray-700 font-medium">{statusMeta(inv).label}</p>
+                  </div>
+                  {inv.deliveredAt && (
+                    <div>
+                      <p className="text-gray-400">Delivered</p>
+                      <p className="text-gray-700 font-medium">{new Date(inv.deliveredAt).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-gray-400">Payment</p>
+                    <p className="text-gray-700 font-medium capitalize">
+                      {inv.paymentMethod === "cod" ? "Cash on Delivery" : inv.paymentMethod}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Items */}
+                <table className="w-full text-sm mb-6">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: "#702834" }}>
+                      <th className="text-left py-2 text-xs font-bold uppercase text-gray-500">#</th>
+                      <th className="text-left py-2 text-xs font-bold uppercase text-gray-500">Item</th>
+                      <th className="text-right py-2 text-xs font-bold uppercase text-gray-500">Qty</th>
+                      <th className="text-right py-2 text-xs font-bold uppercase text-gray-500">Price</th>
+                      <th className="text-right py-2 text-xs font-bold uppercase text-gray-500">GST %</th>
+                      <th className="text-right py-2 text-xs font-bold uppercase text-gray-500">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, i) => (
+                      <tr key={it._id || i} className="border-b border-gray-100">
+                        <td className="py-2 text-gray-500">{i + 1}</td>
+                        <td className="py-2 text-gray-800">{it.name}</td>
+                        <td className="py-2 text-right text-gray-700">
+                          {it.quantity}{it.unit ? ` ${it.unit}` : ""}
+                        </td>
+                        <td className="py-2 text-right text-gray-700">₹{it.price}</td>
+                        <td className="py-2 text-right text-gray-700">{it.gst != null ? `${Number(it.gst)}%` : "—"}</td>
+                        <td className="py-2 text-right font-medium text-gray-800">
+                          ₹{(it.price || 0) * (it.quantity || 1)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Totals */}
+                <div className="flex justify-end mb-6">
+                  <div className="w-64 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Subtotal</span>
+                      <span className="text-gray-800">₹{subtotal}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">GST</span>
+                      <span className="text-gray-800">₹{gst}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold" style={{ color: "#702834" }}>
+                      <span>Total</span>
+                      <span>₹{total}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes + footer */}
+                {inv.orderNotes && (
+                  <p className="text-xs text-gray-500 mb-4">
+                    <span className="font-semibold">Note:</span> {inv.orderNotes}
+                  </p>
+                )}
+                <div className="border-t border-gray-100 pt-4 text-center">
+                  <p className="text-sm font-semibold text-gray-700">Thank you for your business!</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Sangam Wholesale · This is a computer-generated invoice.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        );
+        })(),
+        document.body
       )}
     </div>
   );

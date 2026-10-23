@@ -21,6 +21,8 @@
     "antd": "^5.25.4",
     "axios": "^1.9.0",
     "framer-motion": "^12.15.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.511.0",
     "mongoose": "^9.9.0",
     "react": "^18.3.1",

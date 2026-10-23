@@ -19,14 +19,13 @@ import {
 import { useUserApi } from "../context/UserApiContext";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import CartIcon from "./CartIcon";
 
 const ProductDetails = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const { addToCart, cartItems } = useCart();
+  const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [product, setProduct] = useState(null);
@@ -58,6 +57,19 @@ const ProductDetails = () => {
   }, [productId]);
 
   const handleQuantityChange = (action) => {
+    // If the item is already in the cart, the stepper edits the CART quantity
+    // (so it stays in sync with the bottom-bar − qty + control).
+    if (cartItem) {
+      if (action === "increase") {
+        if (!(product.stock > 0 && cartItem.quantity >= product.stock)) {
+          updateQuantity(cartItem._id, 1);
+        }
+      } else if (action === "decrease") {
+        if (cartItem.quantity > 1) updateQuantity(cartItem._id, -1);
+        else removeFromCart(cartItem._id);
+      }
+      return;
+    }
     if (action === "increase") {
       setQuantity((prev) => Math.min(product.stock, prev + 1));
     } else if (action === "decrease" && quantity > 1) {
@@ -77,6 +89,7 @@ const ProductDetails = () => {
       name: product.name,
       image: product.image,
       price: product.price,
+      gst: product.gst ?? 0,
       brand: product.brand,
       description: product.description,
       unit: product.unit,
@@ -115,7 +128,8 @@ const ProductDetails = () => {
   };
 
   const handleImageError = (e) => {
-    e.target.src = "/ri3.avif"; // fallback image
+    // No fallback image — if the photo is missing/broken, show nothing
+    e.target.style.display = "none";
   };
 
   if (loading) {
@@ -151,15 +165,17 @@ const ProductDetails = () => {
   }
 
   // Calculate pricing
-  const hasDiscount = product.discountPrice && product.discountPrice > 0;
+  const hasDiscount = (product.discountPrice || 0) > 0;
   const originalPrice = hasDiscount
     ? product.price + product.discountPrice
     : product.price;
   const discountPercent = hasDiscount
     ? Math.round((product.discountPrice / originalPrice) * 100)
     : 0;
-  const totalPrice = product.price * quantity;
-  const totalSavings = hasDiscount ? product.discountPrice * quantity : 0;
+  const cartItem = cartItems.find((i) => i._id === (product._id || product.id));
+  const displayQty = cartItem ? cartItem.quantity : quantity;
+  const totalPrice = product.price * displayQty;
+  const totalSavings = hasDiscount ? product.discountPrice * displayQty : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -176,13 +192,7 @@ const ProductDetails = () => {
           <h1 className="text-lg font-bold flex-1 text-center">
             Product Details
           </h1>
-          <button
-            onClick={() => navigate("/cart")}
-            className="relative p-2 rounded-full hover:bg-red-600 transition-colors"
-            aria-label="Cart"
-          >
-            <CartIcon itemCount={cartItems.reduce((total, item) => total + item.quantity, 0)} />
-          </button>
+          <div className="w-16" />
         </div>
       </div>
 
@@ -198,19 +208,18 @@ const ProductDetails = () => {
               onError={handleImageError}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-              <svg className="w-16 h-16 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 20.25h18A2.25 2.25 0 0023.25 18V6A2.25 2.25 0 0021 3.75H3A2.25 2.25 0 00.75 6v12A2.25 2.25 0 003 20.25z" />
-              </svg>
-              <span className="text-gray-400 text-sm font-medium">No Image</span>
-            </div>
+            <div className="w-full h-full bg-gray-100" />
           )}
 
           {/* Stock Badge */}
-          <div className="absolute top-4 left-4 bg-green-600 bg-opacity-90 text-white px-3 py-2 rounded-full flex items-center shadow-lg">
+          <div
+            className={`absolute top-4 left-4 text-white px-3 py-2 rounded-full flex items-center shadow-lg ${
+              product.stock > 0 ? "bg-green-600 bg-opacity-90" : "bg-gray-600 bg-opacity-90"
+            }`}
+          >
             <Package className="w-3 h-3 mr-1" />
             <span className="text-xs font-semibold">
-              {product.stock} in stock
+              {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
             </span>
           </div>
 
@@ -280,12 +289,12 @@ const ProductDetails = () => {
 
           {/* Price Section */}
           <div className="mb-4">
-            <div className="flex items-baseline mb-1">
+            <div className="flex items-baseline mb-1 flex-wrap">
               <span className="text-3xl font-bold text-[#702834] mr-2">
                 ₹{product.price}
               </span>
-              <span className="text-sm text-gray-600 mr-3">
-                {product.quantity} {product.unit}
+              <span className="text-sm text-gray-600 mr-2">
+                per {product.unit || "unit"}
               </span>
               {hasDiscount && (
                 <span className="text-lg line-through text-gray-500">
@@ -295,10 +304,17 @@ const ProductDetails = () => {
             </div>
             {hasDiscount && (
               <p className="text-sm text-[#702834] font-semibold">
-                You save ₹{product.discountPrice} {product.quantity}{" "}
-                {product.unit}
+                You save ₹{product.discountPrice} ({discountPercent}% off)
               </p>
             )}
+            {product.packSize ? (
+              <p className="text-sm text-gray-600 mt-1">
+                1 {product.unit} = {product.packSize} {product.baseUnit}
+              </p>
+            ) : null}
+            <p className="text-sm text-gray-500 mt-1">
+              GST: {Number(product.gst) || 0}%
+            </p>
           </div>
 
           {/* Description */}
@@ -317,15 +333,14 @@ const ProductDetails = () => {
               <button
                 onClick={() => handleQuantityChange("decrease")}
                 className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all"
-                disabled={quantity <= 1}
+                disabled={!cartItem && displayQty <= 1}
               >
                 <Minus className="w-4 h-4 text-[#702834]" />
               </button>
               <div className="px-5 text-center">
                 <div className="text-lg font-bold text-gray-800">
-                  {quantity}
+                  {displayQty}
                 </div>
-                <div className="text-xs text-gray-600">{product.unit}</div>
               </div>
               <button
                 onClick={() => handleQuantityChange("increase")}
@@ -395,31 +410,50 @@ const ProductDetails = () => {
                 Type
               </div>
               <div className="text-base font-medium text-gray-800">
-                {product.subcategoryName || "Premium Rice"}
+                {product.subcategoryName || "—"}
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-600 mb-1">
                 Unit
               </div>
-              <div className="text-base font-medium text-gray-800">
-                {product.quantity} {product.unit}
+              <div className="text-base font-medium text-gray-800 capitalize">
+                {product.unit || "piece"}
+                {product.packSize
+                  ? ` (1 ${product.unit} = ${product.packSize} ${product.baseUnit})`
+                  : ""}
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-600 mb-1">
                 Stock
               </div>
-              <div className="text-base font-medium text-gray-800">
-                {product.stock} available
+              <div
+                className={`text-base font-medium ${
+                  product.stock > 0 ? "text-green-600" : "text-red-500"
+                }`}
+              >
+                {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-600 mb-1">
-                Quality
+                GST
               </div>
-              <div className="text-base font-medium text-gray-800">Grade A</div>
+              <div className="text-base font-medium text-gray-800">
+                {Number(product.gst) || 0}%
+              </div>
             </div>
+            {product.brand && (
+              <div>
+                <div className="text-sm font-semibold text-gray-600 mb-1">
+                  Brand
+                </div>
+                <div className="text-base font-medium text-gray-800">
+                  {product.brand}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -440,19 +474,49 @@ const ProductDetails = () => {
               )}
             </div>
           </div>
-          <button
-            onClick={handleAddToCart}
-            disabled={product.stock === 0}
-            className={`flex items-center text-white px-7 py-3 rounded-full font-bold shadow-lg transition-all ${
-              product.stock > 0
-                ? "hover:shadow-xl transform hover:scale-105"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
-            style={product.stock > 0 ? { backgroundColor: '#702834' } : {}}
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-          </button>
+          {cartItem ? (
+            <div
+              className="flex items-center rounded-full shadow-lg"
+              style={{ backgroundColor: "#702834" }}
+            >
+              <button
+                onClick={() =>
+                  cartItem.quantity > 1
+                    ? updateQuantity(cartItem._id, -1)
+                    : removeFromCart(cartItem._id)
+                }
+                className="w-10 h-10 flex items-center justify-center rounded-full"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="w-4 h-4 text-white" />
+              </button>
+              <span className="text-white font-bold text-lg w-7 text-center">
+                {cartItem.quantity}
+              </span>
+              <button
+                onClick={() => updateQuantity(cartItem._id, 1)}
+                disabled={product.stock > 0 && cartItem.quantity >= product.stock}
+                className="w-10 h-10 flex items-center justify-center rounded-full disabled:opacity-40"
+                aria-label="Increase quantity"
+              >
+                <Plus className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              className={`flex items-center text-white px-7 py-3 rounded-full font-bold shadow-lg transition-all ${
+                product.stock > 0
+                  ? "hover:shadow-xl transform hover:scale-105"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+              style={product.stock > 0 ? { backgroundColor: "#702834" } : {}}
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+            </button>
+          )}
         </div>
       </div>
     </div>

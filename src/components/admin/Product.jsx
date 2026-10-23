@@ -45,6 +45,28 @@ const Product = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Live Price + GST → auto Total Amount (price + GST%). No GST → total = price.
+  const priceWatch = Form.useWatch("price", form);
+  const gstWatch = Form.useWatch("gst", form);
+  const totalAmount =
+    Math.round(
+      ((Number(priceWatch) || 0) +
+        (Number(priceWatch) || 0) * (Number(gstWatch) || 0) / 100) *
+        100
+    ) / 100;
+
+  // Live Stock × Pack Size → total in base unit (e.g. 100 bags × 30 kg = 3000 kg)
+  const stockWatch = Form.useWatch("stock", form);
+  const packSizeWatch = Form.useWatch("packSize", form);
+  const unitWatch = Form.useWatch("unit", form);
+  const baseUnitWatch = Form.useWatch("baseUnit", form);
+  const stockTotal =
+    Number(stockWatch) > 0
+      ? Number(packSizeWatch) > 0
+        ? Number(stockWatch) * Number(packSizeWatch)
+        : Number(stockWatch)
+      : null;
+
   const API_BASE = "/api";
 
   const fetchProducts = async () => {
@@ -144,11 +166,12 @@ const Product = () => {
       formData.append("description", values.description || "");
       formData.append("subcategory", values.subcategory);
       formData.append("price", values.price);
-      formData.append("discountPrice", values.discountPrice || 0);
-      formData.append("unit", values.unit);
-      formData.append("quantity", values.quantity);
+      formData.append("unit", values.unit || "piece");
+      formData.append("gst", values.gst ?? 0);
       formData.append("stock", values.stock);
       formData.append("brand", values.brand || "");
+      formData.append("packSize", values.packSize ?? "");
+      formData.append("baseUnit", values.baseUnit || "");
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append("image", fileList[0].originFileObj);
       }
@@ -171,14 +194,19 @@ const Product = () => {
       setFileList([]);
       fetchProducts();
     } catch (err) {
-      let errorMessage = "Failed to save product";
-      if (err.response) {
-        errorMessage =
-          err.response.data?.message ||
-          err.response.data?.error ||
-          JSON.stringify(err.response.data);
+      // validateFields() throws { errorFields } (no response) on a validation failure
+      if (err.errorFields && err.errorFields.length) {
+        message.error("Please complete all required fields (Category, Subcategory, Name, Price, Stock).");
+      } else {
+        let errorMessage = "Failed to save product";
+        if (err.response) {
+          errorMessage =
+            err.response.data?.message ||
+            err.response.data?.error ||
+            JSON.stringify(err.response.data);
+        }
+        message.error(errorMessage);
       }
-      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -216,22 +244,26 @@ const Product = () => {
   };
 
   const handleEdit = (record) => {
+    // Product has no top-level category — derive it from the populated subcategory
+    const categoryId =
+      record.subcategory?.category?._id || record.category?._id;
     form.setFieldsValue({
       name: record.name || record.title,
       description: record.description,
       price: record.price,
-      discountPrice: record.discountPrice,
       unit: record.unit,
-      quantity: record.quantity,
+      gst: record.gst,
       stock: record.stock,
       brand: record.brand,
-      category: record.category?._id,
+      packSize: record.packSize,
+      baseUnit: record.baseUnit,
+      category: categoryId,
       subcategory: record.subcategory?._id || undefined,
     });
     setEditingId(record._id);
-    setSelectedCategory(record.category?._id);
-    if (record.category?._id) {
-      fetchSubcategories(record.category._id);
+    setSelectedCategory(categoryId);
+    if (categoryId) {
+      fetchSubcategories(categoryId);
     }
     if (record.image) {
       setFileList([
@@ -312,10 +344,9 @@ const Product = () => {
       render: (price) => `₹${price?.toLocaleString()}`,
     },
     {
-      title: "Discount Price",
-      dataIndex: "discountPrice",
-      render: (discountPrice) =>
-        discountPrice ? `₹${discountPrice?.toLocaleString()}` : "-",
+      title: "GST (%)",
+      dataIndex: "gst",
+      render: (gst) => `${gst ?? 0}%`,
     },
     {
       title: "Stock",
@@ -327,14 +358,20 @@ const Product = () => {
       ),
     },
     {
-      title: "Unit",
-      dataIndex: "unit",
-      render: (unit) => unit || "-",
-    },
-    {
-      title: "Quantity",
-      dataIndex: "quantity",
-      render: (quantity) => quantity || "-",
+      title: "Unit / Pack",
+      render: (_, record) => {
+        const unit = record.unit || "piece";
+        return record.packSize ? (
+          <span>
+            {unit}{" "}
+            <span style={{ color: "#999", fontSize: 12 }}>
+              (1 = {record.packSize} {record.baseUnit})
+            </span>
+          </span>
+        ) : (
+          unit
+        );
+      },
     },
     {
       title: "Brand",
@@ -530,43 +567,74 @@ const Product = () => {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="discountPrice" label="Discount Price (₹)">
+              <Form.Item name="gst" label="GST (%)">
                 <InputNumber
                   style={{ width: "100%" }}
                   min={0}
-                  step={0.01}
+                  max={100}
+                  step={0.5}
                   formatter={(value) =>
-                    `₹ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    value || value === 0 ? `${value}%` : ""
                   }
-                  parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                  parser={(value) => value.replace(/%\s?/g, "")}
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                name="unit"
-                label="Unit"
-                rules={[{ required: true, message: "Please input unit!" }]}
-              >
-                <Input placeholder="e.g. kg, piece, box" />
+              <Form.Item label="Total Amount (₹)">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  value={totalAmount}
+                  readOnly
+                  formatter={(value) =>
+                    `₹ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="quantity"
-                label="Quantity"
-                rules={[{ required: true, message: "Please input quantity!" }]}
-              >
-                <InputNumber style={{ width: "100%" }} min={0} />
+            <Col span={12}>
+              <Form.Item name="unit" label="Unit (optional)">
+                <Input placeholder="e.g. bag, box, piece" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
+              <Form.Item label="Weight per Unit">
+                <Space.Compact style={{ width: "100%" }}>
+                  <Form.Item name="packSize" noStyle>
+                    <InputNumber style={{ width: "55%" }} min={0} placeholder="20" />
+                  </Form.Item>
+                  <Form.Item name="baseUnit" noStyle>
+                    <Select
+                      style={{ width: "45%" }}
+                      placeholder="unit"
+                      options={[
+                        { value: "kg", label: "kg" },
+                        { value: "g", label: "gram" },
+                        { value: "litre", label: "litre" },
+                        { value: "ml", label: "ml" },
+                        { value: "piece", label: "piece" },
+                        { value: "dozen", label: "dozen" },
+                        { value: "packet", label: "packet" },
+                        { value: "box", label: "box" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Space.Compact>
+              </Form.Item>
+            </Col>
+          </Row>
+          <p style={{ fontSize: 12, color: "#666", marginTop: -8, marginBottom: 16 }}>
+            1 Unit = Weight per Unit (in base unit) — e.g. 1 bag = 20 kg. (Stock Quantity × this = total.) Leave blank if not applicable.
+          </p>
+
+          <Row gutter={16}>
+            <Col span={12}>
               <Form.Item
                 name="stock"
-                label="Stock Quantity"
+                label="Stock Quantity (number of Units)"
                 rules={[
                   { required: true, message: "Please input stock quantity!" },
                 ]}
@@ -574,12 +642,27 @@ const Product = () => {
                 <InputNumber style={{ width: "100%" }} min={0} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="brand" label="Brand">
                 <Input placeholder="Enter brand name" />
               </Form.Item>
             </Col>
           </Row>
+          {Number(stockWatch) > 0 ? (
+            Number(packSizeWatch) > 0 ? (
+              <p style={{ fontSize: 13, color: "#702834", fontWeight: 600, marginTop: -8, marginBottom: 16 }}>
+                {`Total stock: ${stockWatch} ${unitWatch || "unit"} × ${packSizeWatch} ${baseUnitWatch || ""} = ${stockTotal} ${baseUnitWatch || ""}`}
+              </p>
+            ) : (
+              <p style={{ fontSize: 13, color: "#702834", fontWeight: 600, marginTop: -8, marginBottom: 16 }}>
+                {`Total stock: ${stockWatch} ${unitWatch || "unit"}`}
+              </p>
+            )
+          ) : (
+            <p style={{ fontSize: 13, color: "#702834", fontWeight: 600, marginTop: -8, marginBottom: 16 }}>
+              Total stock shows here — e.g. 20 bags × 20 kg = 400 kg, or 20 kg direct
+            </p>
+          )}
 
           <Form.Item label="Product Image">
             <Upload {...uploadProps}>
@@ -622,8 +705,9 @@ const Product = () => {
                   { label: "Name",        value: viewItem.name },
                   { label: "Brand",       value: viewItem.brand },
                   { label: "Price",       value: viewItem.price ? `₹${viewItem.price}` : "-" },
-                  { label: "Discount",    value: viewItem.discountPrice ? `₹${viewItem.discountPrice}` : "-" },
+                  { label: "GST",         value: viewItem.gst ? `${viewItem.gst}%` : "0%" },
                   { label: "Unit",        value: viewItem.unit },
+                  { label: "Pack",        value: viewItem.packSize ? `1 ${viewItem.unit} = ${viewItem.packSize} ${viewItem.baseUnit}` : "-" },
                   { label: "Quantity",    value: viewItem.quantity },
                   { label: "Stock",       value: viewItem.stock },
                   { label: "Category",    value: viewItem.subcategory?.category?.name || "N/A" },

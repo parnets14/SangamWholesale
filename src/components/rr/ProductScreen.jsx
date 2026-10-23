@@ -44,12 +44,16 @@ const ProductScreen = () => {
               className="bg-white rounded-xl shadow p-4 flex flex-col"
             >
               <div className="relative mb-3">
-                <img
-                  src={product.image || "/ri3.avif"}
-                  alt={product.name}
-                  className="w-full h-40 object-cover rounded"
-                  onError={e => (e.target.src = "/ri3.avif")}
-                />
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-40 object-cover rounded"
+                    onError={e => { e.target.style.visibility = "hidden"; }}
+                  />
+                ) : (
+                  <div className="w-full h-40 rounded" />
+                )}
                 {hasDiscount && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
                     {discountPercent}% OFF

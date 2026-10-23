@@ -17,10 +17,21 @@ import {
   Mail,
   Briefcase,
   FileText,
+  Download,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+
+// Seller (Sangam Wholesale) details shown on the customer invoice "From" block.
+const SELLER = {
+  name: "Sangam Wholesale",
+  address: "Sangam Wholesale — add shop address here",
+  gstin: "29ABUCS3779C1ZM",
+  phone: "",
+};
 
 const ProfilePage = () => {
   // Use AuthContext for user and token
@@ -36,11 +47,150 @@ const ProfilePage = () => {
         _id: item.productId,
         name: item.name,
         price: item.price,
+        gst: item.gst ?? 0,
         image: item.rawImage,
         quantity: item.quantity || 1,
       });
     });
     navigate("/cart");
+  };
+
+  // Build the invoice markup (self-contained, .inv-scoped) for a delivered order.
+  const buildInvoiceFragment = (order) => {
+    const items = order.items || [];
+    const subtotal =
+      order.subtotal ??
+      items.reduce((s, it) => s + (it.price || 0) * (it.quantity || 1), 0);
+    const gst = order.gst ?? 0;
+    const total = order.total ?? subtotal + gst;
+    const toName = user.businessName || user.name || "Customer";
+    const toPhone = user.phone ? `+91 ${user.phone}` : "";
+    const toGst = user.gst || "";
+    const payment =
+      order.paymentMethod === "cod"
+        ? "Cash on Delivery"
+        : order.paymentMethod || "—";
+    const dateStr = new Date(order.date).toLocaleDateString();
+    const deliveredStr = order.deliveredAt
+      ? new Date(order.deliveredAt).toLocaleDateString()
+      : "";
+
+    const itemRows = items
+      .map(
+        (it, i) => `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;">${i + 1}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;">${it.name}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">${it.quantity}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">₹${it.price}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600;">₹${(it.price || 0) * (it.quantity || 1)}</td>
+      </tr>`
+      )
+      .join("");
+
+    return `<style>
+        .inv{font-family:Arial,Helvetica,sans-serif;color:#333;background:#fff;padding:24px;}
+        .inv .brand{color:#702834;}
+        .inv table{width:100%;border-collapse:collapse;font-size:14px;}
+        .inv th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#999;border-bottom:2px solid #702834;padding-bottom:6px;}
+      </style>
+      <div class="inv">
+      <div style="display:flex;justify-content:space-between;border-bottom:2px solid #702834;padding-bottom:16px;margin-bottom:24px;">
+        <div><h1 class="brand" style="margin:0;font-size:24px;">${SELLER.name}</h1><p style="font-size:12px;color:#666;margin:4px 0 0;">Tax Invoice</p></div>
+        <div style="text-align:right;"><p style="margin:0;font-weight:bold;">INVOICE</p><p style="margin:0;">#${order.orderId}</p><p style="margin:0;font-size:12px;color:#999;">${dateStr}</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <div>
+          <p style="font-size:11px;color:#999;font-weight:bold;text-transform:uppercase;margin:0 0 4px;">From</p>
+          <p style="margin:0;font-weight:bold;">${SELLER.name}</p>
+          <p style="margin:2px 0;font-size:12px;color:#555;">${SELLER.address}</p>
+          <p style="margin:2px 0;font-size:12px;"><span style="color:#999;">GSTIN:</span> ${SELLER.gstin}</p>
+        </div>
+        <div>
+          <p style="font-size:11px;color:#999;font-weight:bold;text-transform:uppercase;margin:0 0 4px;">Bill To</p>
+          <p style="margin:0;font-weight:bold;">${toName}</p>
+          ${toPhone ? `<p style="margin:2px 0;font-size:12px;color:#555;">${toPhone}</p>` : ""}
+          ${toGst ? `<p style="margin:2px 0;font-size:12px;"><span style="color:#999;">GSTIN:</span> ${toGst}</p>` : ""}
+          ${order.deliveryAddress ? `<p style="margin:2px 0;font-size:12px;color:#555;">${order.deliveryAddress}</p>` : ""}
+        </div>
+      </div>
+      <div style="display:flex;gap:24px;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:10px 0;margin-bottom:24px;font-size:12px;">
+        <div><span style="color:#999;">Status:</span> ${order.status}</div>
+        ${deliveredStr ? `<div><span style="color:#999;">Delivered:</span> ${deliveredStr}</div>` : ""}
+        <div><span style="color:#999;">Payment:</span> ${payment}</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Item</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Price</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <div style="width:260px;margin-left:auto;margin-top:24px;font-size:14px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:#666;">Subtotal</span><span>₹${subtotal}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:#666;">GST</span><span>₹${gst}</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:8px;font-weight:bold;color:#702834;font-size:16px;"><span>Total</span><span>₹${total}</span></div>
+      </div>
+      <div style="border-top:1px solid #eee;margin-top:32px;padding-top:16px;text-align:center;">
+        <p style="font-weight:600;margin:0;">Thank you for your business!</p>
+        <p style="font-size:12px;color:#999;margin:4px 0 0;">${SELLER.name} · This is a computer-generated invoice.</p>
+      </div>
+      </div>`;
+  };
+
+  // Fallback: open the invoice in a new tab for manual print / save-as-PDF.
+  const openInvoiceWindow = (order) => {
+    const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${order.orderId}</title></head><body style="margin:0;">${buildInvoiceFragment(order)}</body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Please allow pop-ups so the invoice can open.");
+      return;
+    }
+    w.document.open();
+    w.document.write(doc);
+    w.document.close();
+    setTimeout(() => {
+      try {
+        w.focus();
+        w.print();
+      } catch (e) {
+        /* user can print manually */
+      }
+    }, 400);
+  };
+
+  // Generate the invoice as a PDF and download it straight to the Downloads folder.
+  const handleDownloadInvoice = async (order) => {
+    const holder = document.createElement("div");
+    holder.style.position = "fixed";
+    holder.style.left = "-9999px";
+    holder.style.top = "0";
+    holder.style.width = "800px";
+    holder.style.background = "#ffffff";
+    holder.innerHTML = buildInvoiceFragment(order);
+    document.body.appendChild(holder);
+    try {
+      const node = holder.querySelector(".inv") || holder;
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 10;
+      const ratio = Math.min(
+        (pageW - margin * 2) / canvas.width,
+        (pageH - margin * 2) / canvas.height
+      );
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, w, h);
+      pdf.save(`Invoice-${order.orderId}.pdf`);
+    } catch (e) {
+      console.log(e);
+      openInvoiceWindow(order); // fallback if PDF generation fails
+    } finally {
+      document.body.removeChild(holder);
+    }
   };
 
   // User Profile State
@@ -208,6 +358,10 @@ const ProfilePage = () => {
                 orderId: order.orderId,
                 date: order.createdAt,
                 total: order.total,
+                subtotal: order.subtotal,
+                gst: order.gst,
+                paymentMethod: order.paymentMethod,
+                deliveredAt: order.deliveredAt,
                 status: getDeliveryStatus(effStatus),
                 deliveryStatus: order.deliveryStatus,
                 deliveryOtp: order.deliveryOtp,
@@ -269,6 +423,10 @@ const ProfilePage = () => {
                 orderId: order.orderId,
                 date: order.createdAt,
                 total: order.total,
+                subtotal: order.subtotal,
+                gst: order.gst,
+                paymentMethod: order.paymentMethod,
+                deliveredAt: order.deliveredAt,
                 status: getDeliveryStatus(effStatus),
                 deliveryStatus: order.deliveryStatus,
                 deliveryOtp: order.deliveryOtp,
@@ -1312,6 +1470,17 @@ const ProfilePage = () => {
                   >
                     Track Order
                   </motion.button>
+                  {order.status === "Delivered" && (
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleDownloadInvoice(order)}
+                      className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
+                      style={{ backgroundColor: "#702834" }}
+                    >
+                      <Download size={16} className="mr-2" /> Invoice
+                    </motion.button>
+                  )}
                   {(order.status === "Delivered" ||
                     order.status === "Cancelled") && (
                     <motion.button

@@ -5,6 +5,14 @@ import { useAuth } from "../context/AuthContext";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
+// Seconds the Resend button stays disabled before it can be used again.
+const RESEND_COOLDOWN = 10;
+const formatTimer = (s) => {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+};
+
 const OTPVerification = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,6 +20,14 @@ const OTPVerification = () => {
   const location = useLocation();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const mobile = location.state?.mobile;
+  const [resendTimer, setResendTimer] = useState(RESEND_COOLDOWN);
+
+  // Countdown for the Resend button (starts as soon as the OTP screen opens)
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer]);
 
   // Already logged in → Home
   useEffect(() => {
@@ -104,8 +120,9 @@ const OTPVerification = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        toast.success("OTP resent successfully!");
+        toast.success(`${data.otp} — OTP resent successfully!`, { duration: 20000 });
         setOtp("");
+        setResendTimer(RESEND_COOLDOWN);
       } else {
         toast.error(data.message || "Failed to resend OTP");
       }
@@ -179,13 +196,15 @@ const OTPVerification = () => {
         <div className="text-center">
           <button
             onClick={handleResendOTP}
-            disabled={loading}
+            disabled={loading || resendTimer > 0}
             className={`text-sm font-medium transition-colors duration-200 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
+              loading || resendTimer > 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
             style={{ color: "#702834" }}
           >
-            Didn't receive OTP? Resend
+            {resendTimer > 0
+              ? `Resend OTP in ${formatTimer(resendTimer)}`
+              : "Didn't receive OTP? Resend"}
           </button>
         </div>
       </motion.div>
