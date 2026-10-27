@@ -3,18 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, ArrowLeft, Check, Loader2, Search, Navigation } from "lucide-react";
 
-const steps = ["Location", "Address", "Timings", "GST"];
-const timeOptions = [
-  "09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
-  "12:00 PM","12:30 PM","01:00 PM","01:30 PM","02:00 PM","02:30 PM","03:00 PM",
-];
-const lunchOptions = [
-  "12:00 PM","12:30 PM","01:00 PM","01:30 PM","02:00 PM","02:30 PM","03:00 PM",
-];
-const defaultWeekly = {
-  Sunday:"open", Monday:"open", Tuesday:"open", Wednesday:"open",
-  Thursday:"open", Friday:"open", Saturday:"open",
-};
+const steps = ["Location", "Address", "GST"];
 
 const DEFAULT_LOCATION = { latitude: 12.9716, longitude: 77.5946 };
 const GOOGLE_MAPS_API_KEY = "AIzaSyAHFoepvVjrlMUctcC4wn_VRpOznZBzmhA";
@@ -31,8 +20,7 @@ const Address = () => {
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     shopName: "", shopNoRoad: "", areaName: "", pincode: "", city: "",
-    deliveryContact: "", saveAddressAs: "", selectedTime: "",
-    weeklySchedule: defaultWeekly, lunchStart: "", lunchEnd: "",
+    deliveryContact: "", saveAddressAs: "",
     gstOption: "i_want_gst", gstin: "", latitude: "", longitude: "",
   });
   const [gstVerified, setGstVerified] = useState(false);
@@ -223,10 +211,6 @@ const Address = () => {
         city: editAddress.city || "",
         deliveryContact: editAddress.deliveryContact || "",
         saveAddressAs: editAddress.saveAddressAs || "",
-        selectedTime: editAddress.shopOpenTime || "",
-        weeklySchedule: editAddress.openClosedDays || defaultWeekly,
-        lunchStart: editAddress.lunchTime?.lunchStart || "",
-        lunchEnd: editAddress.lunchTime?.lunchEnd || "",
         gstOption: editAddress.gstOption || "i_want_gst",
         gstin: editAddress.gstin || "",
         latitude: editAddress.latitude || editAddress.location?.latitude || "",
@@ -268,11 +252,6 @@ const Address = () => {
       if (!formData.saveAddressAs.trim()) e.saveAddressAs = "Address label is required";
     }
     if (currentStep === 2) {
-      if (!formData.selectedTime) e.selectedTime = "Please select a time";
-      if (!formData.lunchStart && formData.lunchEnd) e.lunchStart = "Please select lunch start time";
-      if (formData.lunchStart && !formData.lunchEnd) e.lunchEnd = "Please select lunch end time";
-    }
-    if (currentStep === 3) {
       if (formData.gstOption === "i_want_gst" && !formData.gstin.trim()) e.gstin = "GSTIN is required";
       else if (formData.gstOption === "i_want_gst" && !gstVerified) e.gstin = "Please verify GSTIN";
     }
@@ -306,8 +285,6 @@ const Address = () => {
       city: formData.city, town: formData.city,
       deliveryContact: formData.deliveryContact,
       saveAddress: true, default: true,
-      shopOpenTime: formData.selectedTime, openClosedDays: formData.weeklySchedule,
-      lunchTime: { lunchStart: formData.lunchStart, lunchEnd: formData.lunchEnd },
       location: { latitude: formData.latitude, longitude: formData.longitude },
       saveAddressAs: formData.saveAddressAs,
       gstOption: formData.gstOption, gstin: formData.gstin,
@@ -451,57 +428,6 @@ const Address = () => {
         );
 
       case 2:
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Shop Open Time</label>
-              <select className={`border rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#702834] ${errors.selectedTime ? "border-red-500" : "border-gray-300"}`}
-                value={formData.selectedTime} onChange={(e) => setFormData((f) => ({ ...f, selectedTime: e.target.value }))}>
-                <option value="">Select Time</option>
-                {timeOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-              {errors.selectedTime && <p className="text-red-500 text-xs mt-1">{errors.selectedTime}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Open / Closed Days</label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.keys(formData.weeklySchedule).map((day) => (
-                  <div key={day} className="flex items-center gap-2">
-                    <span className="w-24 text-sm text-gray-600">{day}</span>
-                    <select className="border border-gray-300 rounded px-2 py-1 text-sm"
-                      value={formData.weeklySchedule[day]}
-                      onChange={(e) => setFormData((f) => ({ ...f, weeklySchedule: { ...f.weeklySchedule, [day]: e.target.value } }))}>
-                      <option value="open">Open</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Lunch Start</label>
-                <select className={`border rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#702834] ${errors.lunchStart ? "border-red-500" : "border-gray-300"}`}
-                  value={formData.lunchStart} onChange={(e) => setFormData((f) => ({ ...f, lunchStart: e.target.value }))}>
-                  <option value="">Lunch Start</option>
-                  {lunchOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-                {errors.lunchStart && <p className="text-red-500 text-xs mt-1">{errors.lunchStart}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Lunch End</label>
-                <select className={`border rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#702834] ${errors.lunchEnd ? "border-red-500" : "border-gray-300"}`}
-                  value={formData.lunchEnd} onChange={(e) => setFormData((f) => ({ ...f, lunchEnd: e.target.value }))}>
-                  <option value="">Lunch End</option>
-                  {lunchOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-                {errors.lunchEnd && <p className="text-red-500 text-xs mt-1">{errors.lunchEnd}</p>}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
         return (
           <div className="space-y-4">
             <div>
